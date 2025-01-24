@@ -1,2 +1,2 @@
-# D3D1Starter
+# D3D11Starter
 Starter code for a D3D11-based project
