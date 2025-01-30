@@ -4,8 +4,9 @@
 #include <wrl/client.h>
 #include <vector>
 
-#include "Mesh.h"
+#include "Camera.h"
 #include "Entity.h"
+#include "Mesh.h"
 
 class Game
 {
@@ -25,8 +26,10 @@ public:
 private:
 
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
+	void InitializeParameters();
 	void CreateRootSigAndPipelineState();
 	void CreateGeometry();
+	void CreateCameras();
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
@@ -37,11 +40,16 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
 	
-	// Meshes
-	std::vector<Mesh> meshes;
+	// CAMERAS
+	// The index of the camera currently in use
+	unsigned int cameraCurrent;
+	std::vector<std::shared_ptr<Camera>> cameras;
 
-	// Entities
-	std::vector<Entity> entities;
+	// MESHES
+	std::vector<std::shared_ptr<Mesh>> meshes;
+
+	// ENTITIES
+	std::vector<std::shared_ptr<Entity>> entities;
 
 	// Other graphics data
 	D3D12_VIEWPORT viewport{};

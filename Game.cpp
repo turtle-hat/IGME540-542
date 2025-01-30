@@ -1,11 +1,14 @@
 #include "Game.h"
+
+#include <DirectXMath.h>
+
 #include "Graphics.h"
 #include "Vertex.h"
 #include "Input.h"
 #include "PathHelpers.h"
 #include "Window.h"
+#include "BufferStructs.h"
 
-#include <DirectXMath.h>
 
 // Starter code provided by Professor Chris Cascioli
 
@@ -22,6 +25,7 @@ using namespace DirectX;
 // --------------------------------------------------------
 void Game::Initialize()
 {
+	InitializeParameters();
 	CreateRootSigAndPipelineState();
 	CreateGeometry();
 }
@@ -38,7 +42,6 @@ Game::~Game()
 	// Wait for the GPU before we shut down
 	Graphics::WaitForGPU();
 }
-
 
 // --------------------------------------------------------
 // Loads the two basic shaders, then creates the root signature
@@ -88,13 +91,28 @@ void Game::CreateRootSigAndPipelineState()
 
 	// Root Signature
 	{
-		// Describe and serialize the root signature
+		// Define a table of CBV's (constant buffer views)
+		D3D12_DESCRIPTOR_RANGE cbvTable = {};
+		cbvTable.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+		cbvTable.NumDescriptors = 1;
+		cbvTable.BaseShaderRegister = 0;
+		cbvTable.RegisterSpace = 0;
+		cbvTable.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+		// Define the root parameter
+		D3D12_ROOT_PARAMETER rootParam = {};
+		rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		rootParam.DescriptorTable.NumDescriptorRanges = 1;
+		rootParam.DescriptorTable.pDescriptorRanges = &cbvTable;
+
+		// Describe the overall the root signature
 		D3D12_ROOT_SIGNATURE_DESC rootSig = {};
-		rootSig.Flags				= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-		rootSig.NumParameters		= 0;
-		rootSig.pParameters			= 0;
-		rootSig.NumStaticSamplers	= 0;
-		rootSig.pStaticSamplers		= 0;
+		rootSig.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+		rootSig.NumParameters = 1;
+		rootSig.pParameters = &rootParam;
+		rootSig.NumStaticSamplers = 0;
+		rootSig.pStaticSamplers = 0;
 
 		ID3DBlob* serializedRootSig = 0;
 		ID3DBlob* errors = 0;
@@ -195,15 +213,6 @@ void Game::CreateRootSigAndPipelineState()
 	}
 }
 
-
-// --------------------------------------------------------
-// Creates the geometry we're going to draw
-// --------------------------------------------------------
-void Game::CreateGeometry()
-{
-	
-}
-
 // --------------------------------------------------------
 // Handle resizing to match the new window size
 //  - Eventually, we'll want to update our 3D camera
@@ -302,12 +311,21 @@ void Game::Draw(float deltaTime, float totalTime)
 			&Graphics::DSVHandle);
 		Graphics::CommandList->RSSetViewports(1, &viewport);
 		Graphics::CommandList->RSSetScissorRects(1, &scissorRect);
-		Graphics::CommandList->IASetVertexBuffers(0, 1, &vbView);
-		Graphics::CommandList->IASetIndexBuffer(&ibView);
 		Graphics::CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		// Draw
-		Graphics::CommandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+		// Loop through and render all Entities
+		for (unsigned int i = 0; i < entities.size(); i++) {
+
+			std::shared_ptr<Camera> camera = cameras[cameraCurrent];
+
+			// Collect data to send to the vertex shader
+			VertexShaderExternalData vsData = {};
+			vsData.world = entities[i]->GetTransform()->GetWorld();
+			vsData.world = entities[i]->GetTransform()->GetWorld();
+		}
+
+		Graphics::CommandList->SetDescriptorHeaps(1,
+			Graphics::CBVSRVDescriptorHeap.GetAddressOf());
 	}
 
 	// Present
@@ -338,5 +356,34 @@ void Game::Draw(float deltaTime, float totalTime)
 	}
 }
 
+
+
+
+
+// CUSTOM HELPER METHODS
+
+
+// --------------------------------------------------------
+// Initializes all simulation parameters
+// --------------------------------------------------------
+void Game::InitializeParameters()
+{
+	cameraCurrent = 0;
+}
+
+// --------------------------------------------------------
+// Creates the geometry we're going to draw
+// --------------------------------------------------------
+void Game::CreateGeometry()
+{
+
+}
+
+// --------------------------------------------------------
+// Creates all cameras the simulation can use
+// --------------------------------------------------------
+void Game::CreateCameras()
+{
+}
 
 
