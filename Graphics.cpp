@@ -1,6 +1,8 @@
 #include "Graphics.h"
 #include <dxgi1_6.h>
 
+// Code by Professor Chris Cascioli
+
 // Tell the drivers to use high-performance GPU in multi-GPU systems (like laptops)
 extern "C"
 {

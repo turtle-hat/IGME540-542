@@ -2,6 +2,10 @@
 
 #include <d3d12.h>
 #include <wrl/client.h>
+#include <vector>
+
+#include "Mesh.h"
+#include "Entity.h"
 
 class Game
 {
@@ -33,12 +37,11 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
 	
-	// Geometry
-	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW vbView{};
+	// Meshes
+	std::vector<Mesh> meshes;
 
-	Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer;
-	D3D12_INDEX_BUFFER_VIEW ibView{};
+	// Entities
+	std::vector<Entity> entities;
 
 	// Other graphics data
 	D3D12_VIEWPORT viewport{};
