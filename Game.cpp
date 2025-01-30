@@ -18,6 +18,7 @@
 
 // For the DirectX Math library
 using namespace DirectX;
+using namespace std;
 
 // --------------------------------------------------------
 // Called once per program, after the window and graphics API
@@ -313,15 +314,43 @@ void Game::Draw(float deltaTime, float totalTime)
 		Graphics::CommandList->RSSetScissorRects(1, &scissorRect);
 		Graphics::CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+
+
+		// RENDER SCENE
+
+		// Grab the current Camera
+		std::shared_ptr<Camera> camera = cameras[cameraCurrent];
+
+		// Collect base data that will be used for all Entities
+		VertexShaderExternalData baseData = {};
+		baseData.view		= camera->GetViewMatrix();
+		baseData.projection	= camera->GetProjectionMatrix();
+
 		// Loop through and render all Entities
 		for (unsigned int i = 0; i < entities.size(); i++) {
 
-			std::shared_ptr<Camera> camera = cameras[cameraCurrent];
+			// Grab the Entity's Mesh
+			std::shared_ptr<Mesh> mesh = entities[i]->GetMesh();
 
-			// Collect data to send to the vertex shader
-			VertexShaderExternalData vsData = {};
+			// Collect Entity data to send to the vertex shader
+			VertexShaderExternalData vsData = baseData;
 			vsData.world = entities[i]->GetTransform()->GetWorld();
-			vsData.world = entities[i]->GetTransform()->GetWorld();
+
+			// Put vertex shader data into the ring buffer and get a handle to its descriptor
+			D3D12_GPU_DESCRIPTOR_HANDLE handle = Graphics::FillNextConstantBufferAndGetGPUDescriptorHandle(
+				&vsData, sizeof(VertexShaderExternalData));
+
+			// Add a command to set the descriptor
+			Graphics::CommandList->SetGraphicsRootDescriptorTable(0, handle);
+
+			// Set index and vertex buffers for this Entity
+			D3D12_VERTEX_BUFFER_VIEW vbView = mesh->GetVertexBufferView();
+			Graphics::CommandList->IASetVertexBuffers(0, 1, &vbView);
+
+			D3D12_INDEX_BUFFER_VIEW ibView = mesh->GetIndexBufferView();
+			Graphics::CommandList->IASetIndexBuffer(&ibView);
+
+			Graphics::CommandList->DrawIndexedInstanced(mesh->GetIndexCount(), 1, 0, 0, 0);
 		}
 
 		Graphics::CommandList->SetDescriptorHeaps(1,
@@ -360,7 +389,130 @@ void Game::Draw(float deltaTime, float totalTime)
 
 
 
-// CUSTOM HELPER METHODS
+// RESOURCE CREATION HELPER METHODS
+
+
+
+
+// --------------------------------------------------------
+// Creates the meshes and entities we're going to draw
+// --------------------------------------------------------
+void Game::CreateGeometry()
+{
+	// Create meshes from OBJ models
+	// MESHES 0-6
+	meshes.push_back(make_shared<Mesh>("M_Cube",				FixPath(L"../../Assets/Models/cube.obj").c_str()));
+	meshes.push_back(make_shared<Mesh>("M_Cylinder",			FixPath(L"../../Assets/Models/cylinder.obj").c_str()));
+	meshes.push_back(make_shared<Mesh>("M_Helix",				FixPath(L"../../Assets/Models/helix.obj").c_str()));
+	meshes.push_back(make_shared<Mesh>("M_Quad-SingleSided",	FixPath(L"../../Assets/Models/quad.obj").c_str()));
+	meshes.push_back(make_shared<Mesh>("M_Quad-DoubleSided",	FixPath(L"../../Assets/Models/quad_double_sided.obj").c_str()));
+	meshes.push_back(make_shared<Mesh>("M_Sphere",				FixPath(L"../../Assets/Models/sphere.obj").c_str()));
+	meshes.push_back(make_shared<Mesh>("M_Torus",				FixPath(L"../../Assets/Models/torus.obj").c_str()));
+
+	AddEntity("E_Cube",		0,	XMFLOAT3(-3.0f,	0.0f,	0.0f));
+	AddEntity("E_Helix",	2,	XMFLOAT3( 0.0f,	0.0f,	0.0f));
+	AddEntity("E_Sphere",	5,	XMFLOAT3( 3.0f,	0.0f,	0.0f));
+}
+
+// --------------------------------------------------------
+// Adds an Entity to the list of Entities
+// --------------------------------------------------------
+void Game::AddEntity(const char* _name, unsigned int _meshIndex, DirectX::XMFLOAT3 _position)
+{
+	shared_ptr<Entity> entity = make_shared<Entity>(
+		_name,
+		meshes[_meshIndex]
+	);
+
+	entity->GetTransform()->SetPosition(_position);
+	entities.push_back(entity);
+}
+
+// --------------------------------------------------------
+// Creates all cameras the simulation can use
+// --------------------------------------------------------
+void Game::CreateCameras()
+{
+	// Create cameras
+	float aspect = (Window::Width() + 0.0f) / Window::Height();
+	// CAMERAS 0-3
+	AddCamera("C_Main",		XMFLOAT3(0.0f, 0.0f, -5.0f),	XMFLOAT3(0.0f, 0.0f, 0.0f),					aspect, false);
+	AddCamera("C_OrthoYZ",	XMFLOAT3(100.0f, 0.0f, 0.0f),	XMFLOAT3(0.0f, -XM_PIDIV2, 0.0f),			aspect, true);
+	cameras[1]->SetLookSpeed(1.0f);
+	AddCamera("C_OrthoXZ",	XMFLOAT3(0.0f, 100.0f, 0.0f),	XMFLOAT3(XM_PIDIV2 - 0.001f, 0.0f, 0.0f),	aspect, true);
+	cameras[2]->SetLookSpeed(1.0f);
+	AddCamera("C_OrthoXY",	XMFLOAT3(0.0f, 0.0f, -100.0f),	XMFLOAT3(0.0f, 0.0f, 0.0f),					aspect, true);
+	cameras[3]->SetLookSpeed(1.0f);
+}
+
+// --------------------------------------------------------
+// Adds a Camera to the list of Cameras
+// --------------------------------------------------------
+void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect)
+{
+	shared_ptr<Camera> camera = make_shared<Camera>(
+		_name,
+		make_shared<Transform>(),
+		_aspect
+	);
+
+	camera->GetTransform()->SetPosition(_position);
+	camera->GetTransform()->SetRotation(_rotation);
+
+	cameras.push_back(camera);
+}
+
+void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, float _fov)
+{
+	shared_ptr<Camera> camera = make_shared<Camera>(
+		_name,
+		make_shared<Transform>(),
+		_aspect,
+		_fov
+	);
+
+	camera->GetTransform()->SetPosition(_position);
+	camera->GetTransform()->SetRotation(_rotation);
+
+	cameras.push_back(camera);
+}
+
+void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic)
+{
+	shared_ptr<Camera> camera = make_shared<Camera>(
+		_name,
+		make_shared<Transform>(),
+		_aspect,
+		_isOrthographic
+	);
+
+	camera->GetTransform()->SetPosition(_position);
+	camera->GetTransform()->SetRotation(_rotation);
+
+	cameras.push_back(camera);
+}
+
+void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic, float _orthoWidth)
+{
+	shared_ptr<Camera> camera = make_shared<Camera>(
+		_name,
+		make_shared<Transform>(),
+		_aspect,
+		_isOrthographic,
+		_orthoWidth
+	);
+
+	camera->GetTransform()->SetPosition(_position);
+	camera->GetTransform()->SetRotation(_rotation);
+
+	cameras.push_back(camera);
+}
+
+
+
+
+
+// OTHER CUSTOM HELPER METHODS
 
 
 // --------------------------------------------------------
@@ -370,20 +522,4 @@ void Game::InitializeParameters()
 {
 	cameraCurrent = 0;
 }
-
-// --------------------------------------------------------
-// Creates the geometry we're going to draw
-// --------------------------------------------------------
-void Game::CreateGeometry()
-{
-
-}
-
-// --------------------------------------------------------
-// Creates all cameras the simulation can use
-// --------------------------------------------------------
-void Game::CreateCameras()
-{
-}
-
 

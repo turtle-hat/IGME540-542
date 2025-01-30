@@ -253,19 +253,19 @@ Mesh::~Mesh()
 }
 
 // --------------------------------------------------------
-// Returns this Mesh's vertex buffer
+// Returns a view to this Mesh's vertex buffer
 // --------------------------------------------------------
-Microsoft::WRL::ComPtr<ID3D12Resource> Mesh::GetVertexBuffer()
+D3D12_VERTEX_BUFFER_VIEW Mesh::GetVertexBufferView()
 {
-	return vertexBuffer;
+	return vbView;
 }
 
 // --------------------------------------------------------
-// Returns this Mesh's index buffer
+// Returns a view to this Mesh's index buffer
 // --------------------------------------------------------
-Microsoft::WRL::ComPtr<ID3D12Resource> Mesh::GetIndexBuffer()
+D3D12_INDEX_BUFFER_VIEW Mesh::GetIndexBufferView()
 {
-	return indexBuffer;
+	return ibView;
 }
 
 // --------------------------------------------------------

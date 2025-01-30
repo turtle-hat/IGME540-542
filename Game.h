@@ -28,8 +28,15 @@ private:
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
 	void InitializeParameters();
 	void CreateRootSigAndPipelineState();
+
+	// Helper methods for creating specific resources
 	void CreateGeometry();
+	void AddEntity(const char* _name, unsigned int _meshIndex, DirectX::XMFLOAT3 _position);
 	void CreateCameras();
+	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect);
+	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, float _fov);
+	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic);
+	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic, float _orthoWidth);
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
