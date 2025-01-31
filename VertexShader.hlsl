@@ -60,7 +60,7 @@ VertexToPixel main( VertexShaderInput input )
 	//   which we're leaving at 1.0 for now (this is more useful when dealing with 
 	//   a perspective projection matrix, which we'll get to in the future).
 	matrix wvp = mul(projection, mul(view, world));
-	output.screenPosition = mul(wvp, float4(input.localPosition, 1.0f));ing 
+	output.screenPosition = mul(wvp, float4(input.localPosition, 1.0f)); 
 
 	// Whatever we return will make its way through the pipeline to the
 	// next programmable stage we're using (the pixel shader for now)

@@ -47,6 +47,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
 	
+	// SIMULATION STATE
+	bool isInitialized;
+
 	// CAMERAS
 	// The index of the camera currently in use
 	unsigned int cameraCurrent;
