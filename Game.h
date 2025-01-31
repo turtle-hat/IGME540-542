@@ -37,6 +37,9 @@ private:
 	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, float _fov);
 	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic);
 	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic, float _orthoWidth);
+	void ImGuiInitialize();
+	void ImGuiUpdate();
+	void ImGuiBuildInterface();
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the

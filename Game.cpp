@@ -3,6 +3,11 @@
 #include <DirectXMath.h>
 
 #include "Graphics.h"
+// This code assumes files are in "ImGui" subfolder!
+// Adjust as necessary for your own folder structure and project setup
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_dx12.h"
+#include "ImGui/imgui_impl_win32.h"
 #include "Vertex.h"
 #include "Input.h"
 #include "PathHelpers.h"
@@ -48,6 +53,11 @@ Game::~Game()
 {
 	// Wait for the GPU before we shut down
 	Graphics::WaitForGPU();
+
+	// ImGui clean up
+	/*ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();*/
 }
 
 // --------------------------------------------------------
@@ -254,7 +264,7 @@ void Game::OnResize()
 	if (isInitialized) {
 		// Resize camera
 		if (cameras.size() > 0) {
-			cameras[cameraCurrent]->SetAspect((float)Window::Width() / Window::Height());
+			cameras[cameraCurrent]->SetAspect((Window::Width() + 0.0f) / Window::Height());
 		}
 	}
 }
@@ -528,6 +538,40 @@ void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XM
 	camera->GetTransform()->SetRotation(_rotation);
 
 	cameras.push_back(camera);
+}
+
+void Game::ImGuiInitialize()
+{
+	//// Initialize ImGui itself & platform/renderer backends
+	//IMGUI_CHECKVERSION();
+	//ImGui::CreateContext();
+	//ImGui_ImplWin32_Init(Window::Handle());
+	//
+	//ImGui_ImplDX12_InitInfo init_info = {};
+	//init_info.Device = Graphics::Device.Get();
+	//init_info.CommandQueue = Graphics::CommandQueue.Get();
+	//init_info.NumFramesInFlight = APP_NUM_FRAMES_IN_FLIGHT;
+	//init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	//init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+	//// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
+	//// (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
+	//init_info.SrvDescriptorHeap = Graphics::CBVSRVDescriptorHeap.Get();
+	//init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return .Alloc(out_cpu_handle, out_gpu_handle); };
+	//init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
+	//ImGui_ImplDX12_Init(&init_info);
+
+	//// Pick a style (uncomment one of these 3)
+	//ImGui::StyleColorsDark();
+	////ImGui::StyleColorsLight();
+	////ImGui::StyleColorsClassic();
+}
+
+void Game::ImGuiUpdate()
+{
+}
+
+void Game::ImGuiBuildInterface()
+{
 }
 
 
