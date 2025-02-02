@@ -240,8 +240,12 @@ Mesh::Mesh(const char* _name, const wchar_t* _path)
 	//    and detect duplicate vertices, but at that point it would be better to use a more
 	//    sophisticated model loading library like TinyOBJLoader or The Open Asset Importer Library
 
-	CalculateTangents(&verts[0], vertCounter, &indices[0], indexCounter);
-	InitializeBuffers(&verts[0], vertCounter, &indices[0], indexCounter);
+	// Finalize vertex and index counts
+	vertexCount = vertCounter;
+	indexCount = indexCounter;
+
+	CalculateTangents(&verts[0], vertexCount, &indices[0], indexCount);
+	InitializeBuffers(&verts[0], vertexCount, &indices[0], indexCount);
 }
 
 // --------------------------------------------------------

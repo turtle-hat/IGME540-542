@@ -284,7 +284,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	// Rotate meshes
 	for (unsigned int i = 0; i < entities.size(); i++) {
-		entities[i]->GetTransform()->Rotate(10.0f * deltaTime, 0.0f, 0.0f);
+		entities[i]->GetTransform()->Rotate(0.0f, deltaTime, 0.0f);
 	}
 }
 
@@ -542,7 +542,7 @@ void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XM
 
 void Game::ImGuiInitialize()
 {
-	//// Initialize ImGui itself & platform/renderer backends
+	// Initialize ImGui itself & platform/renderer backends
 	//IMGUI_CHECKVERSION();
 	//ImGui::CreateContext();
 	//ImGui_ImplWin32_Init(Window::Handle());
