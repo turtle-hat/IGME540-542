@@ -76,10 +76,10 @@ void Game::CreateRootSigAndPipelineState()
 		// Read our compiled vertex shader code into a blob
 		// - Essentially just "open the file and plop its contents here"
 		D3DReadFileToBlob(
-			FixPath(L"VS_Basic.cso").c_str(),
+			FixPath(L"VS_BasicTexture.cso").c_str(),
 			vertexShaderByteCode.GetAddressOf());
 		D3DReadFileToBlob(
-			FixPath(L"PS_Basic.cso").c_str(),
+			FixPath(L"PS_BasicTexture.cso").c_str(),
 			pixelShaderByteCode.GetAddressOf());
 	}
 
@@ -407,13 +407,21 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Loop through and render all Entities
 		for (unsigned int i = 0; i < entities.size(); i++) {
 
-			// Grab the Entity's Mesh
+			// Grab the Entity's Mesh and Material
 			std::shared_ptr<Mesh> mesh = entities[i]->GetMesh();
+			std::shared_ptr<Material> material = entities[i]->GetMaterial();
 
+			// Set pipeline state for Material
+			Graphics::CommandList->SetPipelineState(material->GetPipelineState().Get());
+
+			// Set the SRV descriptor handle for this material's textures
+			// Note: This assumes that descriptor table 2 is for textures (as per our root sig)
+			Graphics::CommandList->SetGraphicsRootDescriptorTable(2, material->GetFinalGPUHandleForSRVs());
+			
 			// Collect Entity data to send to the vertex shader
 			VertexShaderExternalData vsData = baseData;
 			vsData.world = entities[i]->GetTransform()->GetWorld();
-			vsData.worldIT = entities[i]->GetTransform()->GetWorldInverseTranspose();
+			//vsData.worldIT = entities[i]->GetTransform()->GetWorldInverseTranspose();
 
 			// Put vertex shader data into the ring buffer and get a handle to its descriptor
 			D3D12_GPU_DESCRIPTOR_HANDLE handle = Graphics::FillNextConstantBufferAndGetGPUDescriptorHandle(
@@ -477,20 +485,20 @@ void Game::CreateMaterials()
 	// Load textures
 
 	// TEXTURES 0-13
-	auto tBronzeAM		= LoadTexture(L"../../Assets/Textures/T_bronze_AM.png");
-	auto tBronzeNR		= LoadTexture(L"../../Assets/Textures/T_bronze_NR.png");
-	auto tCobblestoneAM = LoadTexture(L"../../Assets/Textures/T_cobblestone_AM.png");
-	auto tCobblestoneNR = LoadTexture(L"../../Assets/Textures/T_cobblestone_NR.png");
-	//auto tFloorAM		= LoadTexture(L"../../Assets/Textures/T_floor_AM.png");
-	//auto tFloorNR		= LoadTexture(L"../../Assets/Textures/T_floor_NR.png");
-	//auto tPaintAM		= LoadTexture(L"../../Assets/Textures/T_paint_AM.png");
-	//auto tPaintNR		= LoadTexture(L"../../Assets/Textures/T_paint_NR.png");
-	//auto tRoughAM		= LoadTexture(L"../../Assets/Textures/T_rough_AM.png");
-	//auto tRoughNR		= LoadTexture(L"../../Assets/Textures/T_rough_NR.png");
-	auto tScratchedAM	= LoadTexture(L"../../Assets/Textures/T_scratched_AM.png");
-	auto tScratchedNR	= LoadTexture(L"../../Assets/Textures/T_scratched_NR.png");
-	//auto tWoodAM		= LoadTexture(L"../../Assets/Textures/T_wood_AM.png");
-	//auto tWoodNR		= LoadTexture(L"../../Assets/Textures/T_wood_NR.png");
+	auto tBronzeAM		= LoadTexture(L"Assets/Textures/T_bronze_AM.png");
+	auto tBronzeNR		= LoadTexture(L"Assets/Textures/T_bronze_NR.png");
+	auto tCobblestoneAM = LoadTexture(L"Assets/Textures/T_cobblestone_AM.png");
+	auto tCobblestoneNR = LoadTexture(L"Assets/Textures/T_cobblestone_NR.png");
+	//auto tFloorAM		= LoadTexture(L"Assets/Textures/T_floor_AM.png");
+	//auto tFloorNR		= LoadTexture(L"Assets/Textures/T_floor_NR.png");
+	//auto tPaintAM		= LoadTexture(L"Assets/Textures/T_paint_AM.png");
+	//auto tPaintNR		= LoadTexture(L"Assets/Textures/T_paint_NR.png");
+	//auto tRoughAM		= LoadTexture(L"Assets/Textures/T_rough_AM.png");
+	//auto tRoughNR		= LoadTexture(L"Assets/Textures/T_rough_NR.png");
+	auto tScratchedAM	= LoadTexture(L"Assets/Textures/T_scratched_AM.png");
+	auto tScratchedNR	= LoadTexture(L"Assets/Textures/T_scratched_NR.png");
+	//auto tWoodAM		= LoadTexture(L"Assets/Textures/T_wood_AM.png");
+	//auto tWoodNR		= LoadTexture(L"Assets/Textures/T_wood_NR.png");
 
 	// Create Materials
 
