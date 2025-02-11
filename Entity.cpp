@@ -8,11 +8,13 @@ using namespace DirectX;
 /// </summary>
 /// <param name="_name">The internal name for the Entity</param>
 /// <param name="_mesh">The mesh the Entity will be drawn with</param>
-Entity::Entity(const char* _name, shared_ptr<Mesh> _mesh)
+/// <param name="_material">The material the Entity will be drawn with</param>
+Entity::Entity(const char* _name, shared_ptr<Mesh> _mesh, std::shared_ptr<Material> _material)
 {
     // I forget how to make this constructor call the one with more parameters :P
     name = _name;
     mesh = _mesh;
+    material = _material;
     transform = make_shared<Transform>();
 }
 
@@ -21,11 +23,13 @@ Entity::Entity(const char* _name, shared_ptr<Mesh> _mesh)
 /// </summary>
 /// <param name="_name">The internal name for the Entity</param>
 /// <param name="_mesh">The mesh the Entity will be drawn with</param>
+/// <param name="_material">The material the Entity will be drawn with</param>
 /// <param name="_transform">The Entity's Transform object</param>
-Entity::Entity(const char* _name, shared_ptr<Mesh> _mesh, shared_ptr<Transform> _transform)
+Entity::Entity(const char* _name, shared_ptr<Mesh> _mesh, std::shared_ptr<Material> _material, shared_ptr<Transform> _transform)
 {
     name = _name;
     mesh = _mesh;
+    material = _material;
     transform = _transform;
 }
 
@@ -36,6 +40,11 @@ Entity::Entity(const char* _name, shared_ptr<Mesh> _mesh, shared_ptr<Transform> 
 std::shared_ptr<Mesh> Entity::GetMesh()
 {
     return mesh;
+}
+
+std::shared_ptr<Material> Entity::GetMaterial()
+{
+    return material;
 }
 
 /// <summary>
@@ -63,4 +72,9 @@ const char* Entity::GetName()
 void Entity::SetMesh(std::shared_ptr<Mesh> _mesh)
 {
     mesh = _mesh;
+}
+
+void Entity::SetMaterial(std::shared_ptr<Material> _material)
+{
+    material = _material;
 }

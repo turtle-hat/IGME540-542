@@ -6,6 +6,7 @@
 
 #include "Camera.h"
 #include "Entity.h"
+#include "Material.h"
 #include "Mesh.h"
 
 class Game
@@ -30,13 +31,17 @@ private:
 	void CreateRootSigAndPipelineState();
 
 	// Helper methods for creating specific resources
+	void CreateMaterials();
+	D3D12_CPU_DESCRIPTOR_HANDLE LoadTexture(const wchar_t* path);
+	std::shared_ptr<Material> AddMaterial(const char* _name, Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso);
+	std::shared_ptr<Material> AddMaterial(const char* _name, Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso, DirectX::XMFLOAT3 _colorTint);
 	void CreateGeometry();
-	void AddEntity(const char* _name, unsigned int _meshIndex, DirectX::XMFLOAT3 _position);
+	std::shared_ptr<Entity> AddEntity(const char* _name, unsigned int _meshIndex, unsigned int _materialIndex, DirectX::XMFLOAT3 _position);
 	void CreateCameras();
-	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect);
-	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, float _fov);
-	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic);
-	void AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic, float _orthoWidth);
+	std::shared_ptr<Camera> AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect);
+	std::shared_ptr<Camera> AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, float _fov);
+	std::shared_ptr<Camera> AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic);
+	std::shared_ptr<Camera> AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic, float _orthoWidth);
 	void ImGuiInitialize();
 	void ImGuiUpdate();
 	void ImGuiBuildInterface();
@@ -60,6 +65,12 @@ private:
 
 	// MESHES
 	std::vector<std::shared_ptr<Mesh>> meshes;
+
+	// TEXTURES
+	std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> textures;
+	
+	// MATERIALS
+	std::vector<std::shared_ptr<Material>> materials;
 
 	// ENTITIES
 	std::vector<std::shared_ptr<Entity>> entities;

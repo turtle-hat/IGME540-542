@@ -2,17 +2,17 @@
 
 #include <DirectXMath.h>
 
+#include "BufferStructs.h"
 #include "Graphics.h"
 // This code assumes files are in "ImGui" subfolder!
 // Adjust as necessary for your own folder structure and project setup
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_dx12.h"
 #include "ImGui/imgui_impl_win32.h"
-#include "Vertex.h"
 #include "Input.h"
 #include "PathHelpers.h"
 #include "Window.h"
-#include "BufferStructs.h"
+#include "Vertex.h"
 
 
 // Starter code provided by Professor Chris Cascioli
@@ -36,6 +36,7 @@ void Game::Initialize()
 	InitializeParameters();
 	CreateRootSigAndPipelineState();
 	CreateCameras();
+	CreateMaterials();
 	CreateGeometry();
 
 	// Game is now fully initialized
@@ -467,6 +468,72 @@ void Game::Draw(float deltaTime, float totalTime)
 
 
 
+// --------------------------------------------------------
+// Creates the textures and materials needed for the scene
+// --------------------------------------------------------
+void Game::CreateMaterials()
+{
+	// Load textures
+
+	// TEXTURES 0-13
+	auto tBronzeAM		= LoadTexture(L"../../Assets/Textures/T_bronze_AM.png");
+	auto tBronzeNR		= LoadTexture(L"../../Assets/Textures/T_bronze_NR.png");
+	auto tCobblestoneAM	= LoadTexture(L"../../Assets/Textures/T_cobblestone_AM.png");
+	auto tCobblestoneNR	= LoadTexture(L"../../Assets/Textures/T_cobblestone_NR.png");
+	//auto tFloorAM		= LoadTexture(L"../../Assets/Textures/T_floor_AM.png");
+	//auto tFloorNR		= LoadTexture(L"../../Assets/Textures/T_floor_NR.png");
+	//auto tPaintAM		= LoadTexture(L"../../Assets/Textures/T_paint_AM.png");
+	//auto tPaintNR		= LoadTexture(L"../../Assets/Textures/T_paint_NR.png");
+	//auto tRoughAM		= LoadTexture(L"../../Assets/Textures/T_rough_AM.png");
+	//auto tRoughNR		= LoadTexture(L"../../Assets/Textures/T_rough_NR.png");
+	auto tScratchedAM	= LoadTexture(L"../../Assets/Textures/T_scratched_AM.png");
+	auto tScratchedNR	= LoadTexture(L"../../Assets/Textures/T_scratched_NR.png");
+	//auto tWoodAM		= LoadTexture(L"../../Assets/Textures/T_wood_AM.png");
+	//auto tWoodNR		= LoadTexture(L"../../Assets/Textures/T_wood_NR.png");
+
+	// Create Materials
+
+	// MATERIALS 0-2
+	auto matBronze		= AddMaterial("Mat_Bronze", pipelineState);
+	matBronze			->AddTexture(tBronzeAM, 0);
+	matBronze			->AddTexture(tBronzeNR, 1);
+
+	auto matCobblestone	= AddMaterial("Mat_Cobblestone", pipelineState);
+	matCobblestone		->AddTexture(tCobblestoneAM, 0);
+	matCobblestone		->AddTexture(tCobblestoneNR, 1);
+
+	auto matScratched	= AddMaterial("Mat_Scratched", pipelineState);
+	matScratched		->AddTexture(tScratchedAM, 0);
+	matScratched		->AddTexture(tScratchedNR, 1);
+}
+
+// --------------------------------------------------------
+// Creates the textures and materials needed for the scene
+// --------------------------------------------------------
+D3D12_CPU_DESCRIPTOR_HANDLE Game::LoadTexture(const wchar_t* path)
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE newTexture = Graphics::LoadTexture(path);
+	textures.push_back(newTexture);
+	return newTexture;
+}
+
+std::shared_ptr<Material> Game::AddMaterial(const char* _name, Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso)
+{
+	return AddMaterial(_name, _pso, XMFLOAT3(1.0f, 1.0f, 1.0f));
+}
+
+std::shared_ptr<Material> Game::AddMaterial(const char* _name, Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso, DirectX::XMFLOAT3 _colorTint)
+{
+	std::shared_ptr<Material> newMaterial = std::make_shared<Material>(
+		_name,
+		_pso,
+		_colorTint,
+		XMFLOAT2(1.0f, 1.0f),
+		XMFLOAT2(0.0f, 0.0f)
+	);
+	materials.push_back(newMaterial);
+	return newMaterial;
+}
 
 // --------------------------------------------------------
 // Creates the meshes and entities we're going to draw
@@ -483,23 +550,26 @@ void Game::CreateGeometry()
 	meshes.push_back(make_shared<Mesh>("M_Sphere",				FixPath(L"../../Assets/Models/sphere.obj").c_str()));
 	meshes.push_back(make_shared<Mesh>("M_Torus",				FixPath(L"../../Assets/Models/torus.obj").c_str()));
 
-	AddEntity("E_Cube",		0,	XMFLOAT3(-3.0f,	0.0f,	0.0f));
-	AddEntity("E_Helix",	2,	XMFLOAT3( 0.0f,	0.0f,	0.0f));
-	AddEntity("E_Sphere",	5,	XMFLOAT3( 3.0f,	0.0f,	0.0f));
+	// ENTITIES 0-2
+	AddEntity("E_Cube",		0,	0,	XMFLOAT3(-3.0f,	0.0f,	0.0f));
+	AddEntity("E_Helix",	2,	1,	XMFLOAT3( 0.0f,	0.0f,	0.0f));
+	AddEntity("E_Sphere",	5,	2,	XMFLOAT3( 3.0f,	0.0f,	0.0f));
 }
 
 // --------------------------------------------------------
 // Adds an Entity to the list of Entities
 // --------------------------------------------------------
-void Game::AddEntity(const char* _name, unsigned int _meshIndex, DirectX::XMFLOAT3 _position)
+std::shared_ptr<Entity> Game::AddEntity(const char* _name, unsigned int _meshIndex, unsigned int _materialIndex, DirectX::XMFLOAT3 _position)
 {
 	shared_ptr<Entity> entity = make_shared<Entity>(
 		_name,
-		meshes[_meshIndex]
+		meshes[_meshIndex],
+		materials[_materialIndex]
 	);
 
 	entity->GetTransform()->SetPosition(_position);
 	entities.push_back(entity);
+	return entity;
 }
 
 // --------------------------------------------------------
@@ -511,18 +581,18 @@ void Game::CreateCameras()
 	float aspect = (Window::Width() + 0.0f) / Window::Height();
 	// CAMERAS 0-3
 	AddCamera("C_Main",		XMFLOAT3(0.0f, 0.0f, -5.0f),	XMFLOAT3(0.0f, 0.0f, 0.0f),					aspect, false);
-	AddCamera("C_OrthoYZ",	XMFLOAT3(100.0f, 0.0f, 0.0f),	XMFLOAT3(0.0f, -XM_PIDIV2, 0.0f),			aspect, true);
-	cameras[1]->SetLookSpeed(1.0f);
-	AddCamera("C_OrthoXZ",	XMFLOAT3(0.0f, 100.0f, 0.0f),	XMFLOAT3(XM_PIDIV2 - 0.001f, 0.0f, 0.0f),	aspect, true);
-	cameras[2]->SetLookSpeed(1.0f);
-	AddCamera("C_OrthoXY",	XMFLOAT3(0.0f, 0.0f, -100.0f),	XMFLOAT3(0.0f, 0.0f, 0.0f),					aspect, true);
-	cameras[3]->SetLookSpeed(1.0f);
+	auto orthoYZ = AddCamera("C_OrthoYZ",	XMFLOAT3(100.0f, 0.0f, 0.0f),	XMFLOAT3(0.0f, -XM_PIDIV2, 0.0f),			aspect, true);
+	orthoYZ->SetLookSpeed(1.0f);
+	auto orthoXZ = AddCamera("C_OrthoXZ",	XMFLOAT3(0.0f, 100.0f, 0.0f),	XMFLOAT3(XM_PIDIV2 - 0.001f, 0.0f, 0.0f),	aspect, true);
+	orthoXZ->SetLookSpeed(1.0f);
+	auto orthoXY = AddCamera("C_OrthoXY",	XMFLOAT3(0.0f, 0.0f, -100.0f),	XMFLOAT3(0.0f, 0.0f, 0.0f),					aspect, true);
+	orthoXY->SetLookSpeed(1.0f);
 }
 
 // --------------------------------------------------------
 // Adds a Camera to the list of Cameras
 // --------------------------------------------------------
-void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect)
+shared_ptr<Camera> Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect)
 {
 	shared_ptr<Camera> camera = make_shared<Camera>(
 		_name,
@@ -534,9 +604,10 @@ void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XM
 	camera->GetTransform()->SetRotation(_rotation);
 
 	cameras.push_back(camera);
+	return camera;
 }
 
-void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, float _fov)
+shared_ptr<Camera> Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, float _fov)
 {
 	shared_ptr<Camera> camera = make_shared<Camera>(
 		_name,
@@ -549,9 +620,10 @@ void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XM
 	camera->GetTransform()->SetRotation(_rotation);
 
 	cameras.push_back(camera);
+	return camera;
 }
 
-void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic)
+shared_ptr<Camera> Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic)
 {
 	shared_ptr<Camera> camera = make_shared<Camera>(
 		_name,
@@ -564,9 +636,10 @@ void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XM
 	camera->GetTransform()->SetRotation(_rotation);
 
 	cameras.push_back(camera);
+	return camera;
 }
 
-void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic, float _orthoWidth)
+shared_ptr<Camera> Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic, float _orthoWidth)
 {
 	shared_ptr<Camera> camera = make_shared<Camera>(
 		_name,
@@ -580,6 +653,7 @@ void Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XM
 	camera->GetTransform()->SetRotation(_rotation);
 
 	cameras.push_back(camera);
+	return camera;
 }
 
 void Game::ImGuiInitialize()
