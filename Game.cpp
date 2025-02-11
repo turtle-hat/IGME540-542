@@ -129,7 +129,7 @@ void Game::CreateRootSigAndPipelineState()
 		// Create a range of SRV's for textures
 		D3D12_DESCRIPTOR_RANGE srvRange = {};
 		srvRange.RangeType							= D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-		srvRange.NumDescriptors						= 1; // Set to max number of textures at once (match pixel shader!)
+		srvRange.NumDescriptors						= 4; // Set to max number of textures at once (match pixel shader!)
 		srvRange.BaseShaderRegister					= 0; // Starts at s0 (match pixel shader!)
 		srvRange.RegisterSpace						= 0;
 		srvRange.OffsetInDescriptorsFromTableStart	= D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
@@ -479,8 +479,8 @@ void Game::CreateMaterials()
 	// TEXTURES 0-13
 	auto tBronzeAM		= LoadTexture(L"../../Assets/Textures/T_bronze_AM.png");
 	auto tBronzeNR		= LoadTexture(L"../../Assets/Textures/T_bronze_NR.png");
-	auto tCobblestoneAM	= LoadTexture(L"../../Assets/Textures/T_cobblestone_AM.png");
-	auto tCobblestoneNR	= LoadTexture(L"../../Assets/Textures/T_cobblestone_NR.png");
+	auto tCobblestoneAM = LoadTexture(L"../../Assets/Textures/T_cobblestone_AM.png");
+	auto tCobblestoneNR = LoadTexture(L"../../Assets/Textures/T_cobblestone_NR.png");
 	//auto tFloorAM		= LoadTexture(L"../../Assets/Textures/T_floor_AM.png");
 	//auto tFloorNR		= LoadTexture(L"../../Assets/Textures/T_floor_NR.png");
 	//auto tPaintAM		= LoadTexture(L"../../Assets/Textures/T_paint_AM.png");
