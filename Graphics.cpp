@@ -39,6 +39,7 @@ namespace Graphics
 		void* cbUploadHeapStartAddress = 0;
 
 		unsigned int srvDescriptorOffset = MaxConstantBuffers; // Assume first SRV is after all CBVs
+
 		// Texture resources we need to keep alive
 		std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> textures;
 		std::vector<Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>> cpuSideTextureDescriptorHeaps;

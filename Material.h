@@ -16,12 +16,16 @@ public:
 	DirectX::XMFLOAT2 GetUVScale();
 	DirectX::XMFLOAT2 GetUVOffset();
 	const char* GetName();
+	float GetRoughness();
+	float GetMetalness();
 
 	// Setters
 	void SetPipelineState(Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso);
 	void SetColorTint(DirectX::XMFLOAT3 _colorTint);
 	void SetUVScale(DirectX::XMFLOAT2 _uvScale);
 	void SetUVOffset(DirectX::XMFLOAT2 _uvOffset);
+	void SetRoughness(float _roughness);
+	void SetMetalness(float _metalness);
 
 	// Material Management
 	void AddTexture(D3D12_CPU_DESCRIPTOR_HANDLE _srv, unsigned int _slot);
@@ -32,6 +36,8 @@ private:
 	DirectX::XMFLOAT3 colorTint;
 	DirectX::XMFLOAT2 uvScale;
 	DirectX::XMFLOAT2 uvOffset;
+	float roughness;
+	float metalness;
 
 	// Texture Data
 	bool finalized;

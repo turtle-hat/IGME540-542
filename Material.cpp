@@ -8,6 +8,8 @@ Material::Material(const char* _name, Microsoft::WRL::ComPtr<ID3D12PipelineState
 	colorTint = _colorTint;
 	uvScale = _uvScale;
 	uvOffset = _uvOffset;
+	roughness = 1.0f;
+	metalness = 1.0f;
 
 	finalized = false;
 	highestTextureSlotInUse = 0;
@@ -45,6 +47,16 @@ const char* Material::GetName()
 	return name;
 }
 
+float Material::GetRoughness()
+{
+	return roughness;
+}
+
+float Material::GetMetalness()
+{
+	return metalness;
+}
+
 void Material::SetPipelineState(Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso)
 {
 	pso = _pso;
@@ -63,6 +75,16 @@ void Material::SetUVScale(DirectX::XMFLOAT2 _uvScale)
 void Material::SetUVOffset(DirectX::XMFLOAT2 _uvOffset)
 {
 	uvOffset = _uvOffset;
+}
+
+void Material::SetRoughness(float _roughness)
+{
+	roughness = _roughness;
+}
+
+void Material::SetMetalness(float _metalness)
+{
+	metalness = _metalness;
 }
 
 // Adds a texture SRV to the material to be referred to by a specific texture register

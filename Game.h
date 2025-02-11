@@ -32,7 +32,7 @@ private:
 
 	// Helper methods for creating specific resources
 	void CreateMaterials();
-	D3D12_CPU_DESCRIPTOR_HANDLE LoadTexture(const wchar_t* path);
+	D3D12_CPU_DESCRIPTOR_HANDLE LoadTexture(const wchar_t* _path);
 	std::shared_ptr<Material> AddMaterial(const char* _name, Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso);
 	std::shared_ptr<Material> AddMaterial(const char* _name, Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso, DirectX::XMFLOAT3 _colorTint);
 	void CreateGeometry();

@@ -76,10 +76,10 @@ void Game::CreateRootSigAndPipelineState()
 		// Read our compiled vertex shader code into a blob
 		// - Essentially just "open the file and plop its contents here"
 		D3DReadFileToBlob(
-			FixPath(L"VertexShader.cso").c_str(),
+			FixPath(L"VS_Basic.cso").c_str(),
 			vertexShaderByteCode.GetAddressOf());
 		D3DReadFileToBlob(
-			FixPath(L"PixelShader.cso").c_str(),
+			FixPath(L"PS_Basic.cso").c_str(),
 			pixelShaderByteCode.GetAddressOf());
 	}
 
@@ -129,7 +129,7 @@ void Game::CreateRootSigAndPipelineState()
 		// Create a range of SRV's for textures
 		D3D12_DESCRIPTOR_RANGE srvRange = {};
 		srvRange.RangeType							= D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-		srvRange.NumDescriptors						= 4; // Set to max number of textures at once (match pixel shader!)
+		srvRange.NumDescriptors						= 1; // Set to max number of textures at once (match pixel shader!)
 		srvRange.BaseShaderRegister					= 0; // Starts at s0 (match pixel shader!)
 		srvRange.RegisterSpace						= 0;
 		srvRange.OffsetInDescriptorsFromTableStart	= D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
@@ -413,6 +413,7 @@ void Game::Draw(float deltaTime, float totalTime)
 			// Collect Entity data to send to the vertex shader
 			VertexShaderExternalData vsData = baseData;
 			vsData.world = entities[i]->GetTransform()->GetWorld();
+			vsData.worldIT = entities[i]->GetTransform()->GetWorldInverseTranspose();
 
 			// Put vertex shader data into the ring buffer and get a handle to its descriptor
 			D3D12_GPU_DESCRIPTOR_HANDLE handle = Graphics::FillNextConstantBufferAndGetGPUDescriptorHandle(
@@ -496,23 +497,23 @@ void Game::CreateMaterials()
 	// MATERIALS 0-2
 	auto matBronze		= AddMaterial("Mat_Bronze", pipelineState);
 	matBronze			->AddTexture(tBronzeAM, 0);
-	matBronze			->AddTexture(tBronzeNR, 1);
+	matBronze			->FinalizeMaterial();
 
 	auto matCobblestone	= AddMaterial("Mat_Cobblestone", pipelineState);
 	matCobblestone		->AddTexture(tCobblestoneAM, 0);
-	matCobblestone		->AddTexture(tCobblestoneNR, 1);
+	matCobblestone		->FinalizeMaterial();
 
 	auto matScratched	= AddMaterial("Mat_Scratched", pipelineState);
 	matScratched		->AddTexture(tScratchedAM, 0);
-	matScratched		->AddTexture(tScratchedNR, 1);
+	matScratched		->FinalizeMaterial();
 }
 
 // --------------------------------------------------------
 // Creates the textures and materials needed for the scene
 // --------------------------------------------------------
-D3D12_CPU_DESCRIPTOR_HANDLE Game::LoadTexture(const wchar_t* path)
+D3D12_CPU_DESCRIPTOR_HANDLE Game::LoadTexture(const wchar_t* _path)
 {
-	D3D12_CPU_DESCRIPTOR_HANDLE newTexture = Graphics::LoadTexture(path);
+	D3D12_CPU_DESCRIPTOR_HANDLE newTexture = Graphics::LoadTexture(_path);
 	textures.push_back(newTexture);
 	return newTexture;
 }
