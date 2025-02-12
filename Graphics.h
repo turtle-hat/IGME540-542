@@ -13,7 +13,7 @@ namespace Graphics
 {
 	// --- CONSTANTS ---
 
-	const unsigned int NumBackBuffers = 3;
+	const unsigned int NumBackBuffers = 2;
 	// Maximum number of constant buffers, assuming each buffer
 	// is 256 bytes or less. Larger buffers are fine, but will
 	// result in fewer buffers in use at any time
