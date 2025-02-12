@@ -430,7 +430,7 @@ void Game::Draw(float deltaTime, float totalTime)
 			{
 				VertexShaderExternalData vsData = vsBaseData;
 				vsData.world = entities[i]->GetTransform()->GetWorld();
-				//vsData.worldIT = entities[i]->GetTransform()->GetWorldInverseTranspose();
+				vsData.worldIT = entities[i]->GetTransform()->GetWorldInverseTranspose();
 
 				// Put vertex shader data into the ring buffer and get a handle to its descriptor
 				D3D12_GPU_DESCRIPTOR_HANDLE handle = Graphics::FillNextConstantBufferAndGetGPUDescriptorHandle(
