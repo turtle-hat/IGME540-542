@@ -13,7 +13,7 @@ namespace Graphics
 {
 	// --- CONSTANTS ---
 
-	const unsigned int NumBackBuffers = 2;
+	const unsigned int NumBackBuffers = 3;
 	// Maximum number of constant buffers, assuming each buffer
 	// is 256 bytes or less. Larger buffers are fine, but will
 	// result in fewer buffers in use at any time
@@ -38,7 +38,7 @@ namespace Graphics
 	inline Microsoft::WRL::ComPtr<ID3D12Resource>		CBUploadHeap;
 
 	// Command submission
-	inline Microsoft::WRL::ComPtr<ID3D12CommandAllocator>		CommandAllocator;
+	inline Microsoft::WRL::ComPtr<ID3D12CommandAllocator>		CommandAllocators[NumBackBuffers];
 	inline Microsoft::WRL::ComPtr<ID3D12CommandQueue>			CommandQueue;
 	inline Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>	CommandList;
 
@@ -51,10 +51,15 @@ namespace Graphics
 	inline Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	DSVHeap;
 	inline D3D12_CPU_DESCRIPTOR_HANDLE					DSVHandle{};
 
+	// Synchronization
 	// Basic CPU/GPU synchronization
 	inline Microsoft::WRL::ComPtr<ID3D12Fence>	WaitFence;
 	inline HANDLE								WaitFenceEvent = 0;
 	inline UINT64								WaitFenceCounter = 0;
+	// Pipelined CPU/GPU synchronization
+	inline Microsoft::WRL::ComPtr<ID3D12Fence>	FrameSyncFence;
+	inline HANDLE								FrameSyncFenceEvent = 0;
+	inline UINT64								FrameSyncFenceCounters[NumBackBuffers]{};
 
 	// Debug Layer
 	inline Microsoft::WRL::ComPtr<ID3D12InfoQueue> InfoQueue;
@@ -87,7 +92,7 @@ namespace Graphics
 		unsigned int dataSizeInBytes);
 
 	// Command list & synchronization
-	void ResetAllocatorAndCommandList();
+	void ResetAllocatorAndCommandList(int bufferIndex);
 	void CloseAndExecuteCommandList();
 	void WaitForGPU();
 

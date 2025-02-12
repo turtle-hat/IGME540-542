@@ -409,7 +409,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Collect base pixel shader data that will be used for all Entities
 		PixelShaderExternalData psBaseData = {};
 		psBaseData.cameraPosition = camera->GetTransform()->GetPosition();
-		psBaseData.lightCount = lights.size();
+		psBaseData.lightCount = (int)lights.size();
 		memcpy(psBaseData.lights, &lights[0], sizeof(Light) * MAX_LIGHTS);
 
 		// Loop through and render all Entities
@@ -495,8 +495,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		Graphics::AdvanceSwapChainIndex();
 
 		// Wait for the GPU to be done and then reset the command list & allocator
-		Graphics::WaitForGPU();
-		Graphics::ResetAllocatorAndCommandList();
+		Graphics::ResetAllocatorAndCommandList(Graphics::SwapChainIndex());
 	}
 }
 
