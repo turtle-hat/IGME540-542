@@ -172,5 +172,8 @@
     <None Include="ShaderStructs.hlsli">
       <Filter>Shaders\ShaderIncludes</Filter>
     </None>
+    <None Include="ShaderConstants.hlsli">
+      <Filter>Shaders\ShaderIncludes</Filter>
+    </None>
   </ItemGroup>
 </Project>

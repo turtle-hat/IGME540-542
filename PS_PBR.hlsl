@@ -1,3 +1,4 @@
+#include "ShaderConstants.hlsli"
 #include "ShaderStructs.hlsli"
 #include "ShaderLighting.hlsli"
 #include "ShaderNormals.hlsli"
@@ -8,16 +9,16 @@ cbuffer PrimaryBuffer : register(b0)
 	float3 cameraPosition;
 	int lightCount;
 
-	Light lights[LIGHT_COUNT];
+	Light lights[MAX_LIGHTS];
 
 	float2 uvScale;
 	float2 uvOffset;
 
-	float4 colorTint;
-
+	float3 colorTint;
 	float roughness;
+
 	float metalness;
-	float2 padding;
+	float3 padding;
 }
 
 Texture2D MapAlbedoMetalness : register(t0); // "t" registers for textures
@@ -36,7 +37,7 @@ float4 main(VertexToPixel_Normal input) : SV_TARGET
 	// Pull info out of the diffuse/specular texture
 	float3 sampleAlbedo = pow(sampleAM.rgb, 2.2f); // Gamma uncorrected so it gets the expected value after end correction
 	float finalMetalness = sampleAM.a * metalness;
-	float3 surfaceColor = sampleAlbedo * colorTint.rgb;
+	float3 surfaceColor = sampleAlbedo * colorTint;
 
 	// Unpack and normalize the normal map
 	float4 sampleNR = SampleUnpacked(MapNormalRoughness, BasicSampler, input.uv * uvScale + uvOffset);
@@ -47,6 +48,7 @@ float4 main(VertexToPixel_Normal input) : SV_TARGET
 	// Color of surface with all lighting calculated
 	float3 litColor = CalculateLightingLambertCookTorrance(
 		lights,
+		lightCount,
 		finalNormal,
 		surfaceColor,
 		finalRoughness,

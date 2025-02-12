@@ -6,6 +6,7 @@
 
 #include "Camera.h"
 #include "Entity.h"
+#include "Lights.h"
 #include "Material.h"
 #include "Mesh.h"
 
@@ -42,6 +43,10 @@ private:
 	std::shared_ptr<Camera> AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, float _fov);
 	std::shared_ptr<Camera> AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic);
 	std::shared_ptr<Camera> AddCamera(const char* _name, DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _rotation, float _aspect, bool _isOrthographic, float _orthoWidth);
+	void CreateLights();
+	Light AddLightDirectional(DirectX::XMFLOAT3 _direction, DirectX::XMFLOAT3 _color, float _intensity, bool _isActive);
+	Light AddLightPoint(DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _color, float _intensity, float _range, bool _isActive);
+	Light AddLightSpot(DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _direction, DirectX::XMFLOAT3 _color, float _intensity, float _range, float _innerAngle, float _outerAngle, bool _isActive);
 	void ImGuiInitialize();
 	void ImGuiUpdate();
 	void ImGuiBuildInterface();
@@ -62,6 +67,9 @@ private:
 	// The index of the camera currently in use
 	unsigned int cameraCurrent;
 	std::vector<std::shared_ptr<Camera>> cameras;
+
+	// LIGHTS
+	std::vector<Light> lights;
 
 	// MESHES
 	std::vector<std::shared_ptr<Mesh>> meshes;

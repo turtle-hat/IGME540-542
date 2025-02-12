@@ -14,6 +14,8 @@
 #include "Window.h"
 #include "Vertex.h"
 
+#include "ShaderConstants.hlsli"
+
 
 // Starter code provided by Professor Chris Cascioli
 
@@ -38,6 +40,7 @@ void Game::Initialize()
 	CreateCameras();
 	CreateMaterials();
 	CreateGeometry();
+	CreateLights();
 
 	// Game is now fully initialized
 	isInitialized = true;
@@ -76,10 +79,10 @@ void Game::CreateRootSigAndPipelineState()
 		// Read our compiled vertex shader code into a blob
 		// - Essentially just "open the file and plop its contents here"
 		D3DReadFileToBlob(
-			FixPath(L"VS_BasicTexture.cso").c_str(),
+			FixPath(L"VS_PBR.cso").c_str(),
 			vertexShaderByteCode.GetAddressOf());
 		D3DReadFileToBlob(
-			FixPath(L"PS_BasicTexture.cso").c_str(),
+			FixPath(L"PS_PBR.cso").c_str(),
 			pixelShaderByteCode.GetAddressOf());
 	}
 
@@ -399,10 +402,15 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Grab the current Camera
 		std::shared_ptr<Camera> camera = cameras[cameraCurrent];
 
-		// Collect base data that will be used for all Entities
-		VertexShaderExternalData baseData = {};
-		baseData.view		= camera->GetViewMatrix();
-		baseData.projection	= camera->GetProjectionMatrix();
+		// Collect base vertex shader data that will be used for all Entities
+		VertexShaderExternalData vsBaseData = {};
+		vsBaseData.view			= camera->GetViewMatrix();
+		vsBaseData.projection	= camera->GetProjectionMatrix();
+		// Collect base pixel shader data that will be used for all Entities
+		PixelShaderExternalData psBaseData = {};
+		psBaseData.cameraPosition = camera->GetTransform()->GetPosition();
+		psBaseData.lightCount = lights.size();
+		memcpy(psBaseData.lights, &lights[0], sizeof(Light) * MAX_LIGHTS);
 
 		// Loop through and render all Entities
 		for (unsigned int i = 0; i < entities.size(); i++) {
@@ -419,16 +427,39 @@ void Game::Draw(float deltaTime, float totalTime)
 			Graphics::CommandList->SetGraphicsRootDescriptorTable(2, material->GetFinalGPUHandleForSRVs());
 			
 			// Collect Entity data to send to the vertex shader
-			VertexShaderExternalData vsData = baseData;
-			vsData.world = entities[i]->GetTransform()->GetWorld();
-			//vsData.worldIT = entities[i]->GetTransform()->GetWorldInverseTranspose();
+			{
+				VertexShaderExternalData vsData = vsBaseData;
+				vsData.world = entities[i]->GetTransform()->GetWorld();
+				//vsData.worldIT = entities[i]->GetTransform()->GetWorldInverseTranspose();
 
-			// Put vertex shader data into the ring buffer and get a handle to its descriptor
-			D3D12_GPU_DESCRIPTOR_HANDLE handle = Graphics::FillNextConstantBufferAndGetGPUDescriptorHandle(
-				&vsData, sizeof(VertexShaderExternalData));
+				// Put vertex shader data into the ring buffer and get a handle to its descriptor
+				D3D12_GPU_DESCRIPTOR_HANDLE handle = Graphics::FillNextConstantBufferAndGetGPUDescriptorHandle(
+					(void*)(&vsData), sizeof(VertexShaderExternalData));
 
-			// Add a command to set the descriptor
-			Graphics::CommandList->SetGraphicsRootDescriptorTable(0, handle);
+				// Add a command to set the descriptor
+				Graphics::CommandList->SetGraphicsRootDescriptorTable(0, handle);
+			}
+
+			// Pixel shader data and cbuffer setup
+			{
+				PixelShaderExternalData psData = psBaseData;
+				psData.uvScale = material->GetUVScale();
+				psData.uvOffset = material->GetUVOffset();
+				psData.colorTint = material->GetColorTint();
+				psData.roughness = material->GetRoughness();
+				psData.metalness = material->GetMetalness();
+
+				// Send this to a chunk of the constant buffer heap
+				// and grab the GPU handle for it so we can set it for this draw
+				D3D12_GPU_DESCRIPTOR_HANDLE handle = Graphics::FillNextConstantBufferAndGetGPUDescriptorHandle(
+					(void*)(&psData), sizeof(PixelShaderExternalData));
+				
+				// Set this constant buffer handle
+				// Note: This assumes that descriptor table 1 is the
+				// place to put this particular descriptor. This
+				// is based on how we set up our root signature.
+				Graphics::CommandList->SetGraphicsRootDescriptorTable(1, handle);
+			}
 
 			// Set index and vertex buffers for this Entity
 			D3D12_VERTEX_BUFFER_VIEW vbView = mesh->GetVertexBufferView();
@@ -505,14 +536,17 @@ void Game::CreateMaterials()
 	// MATERIALS 0-2
 	auto matBronze		= AddMaterial("Mat_Bronze", pipelineState);
 	matBronze			->AddTexture(tBronzeAM, 0);
+	matBronze			->AddTexture(tBronzeNR, 1);
 	matBronze			->FinalizeMaterial();
 
 	auto matCobblestone	= AddMaterial("Mat_Cobblestone", pipelineState);
 	matCobblestone		->AddTexture(tCobblestoneAM, 0);
+	matCobblestone		->AddTexture(tCobblestoneNR, 1);
 	matCobblestone		->FinalizeMaterial();
 
 	auto matScratched	= AddMaterial("Mat_Scratched", pipelineState);
 	matScratched		->AddTexture(tScratchedAM, 0);
+	matScratched		->AddTexture(tScratchedNR, 1);
 	matScratched		->FinalizeMaterial();
 }
 
@@ -663,6 +697,65 @@ shared_ptr<Camera> Game::AddCamera(const char* _name, DirectX::XMFLOAT3 _positio
 
 	cameras.push_back(camera);
 	return camera;
+}
+
+void Game::CreateLights()
+{
+	// Create lights
+	// LIGHTS 0-2
+	AddLightDirectional(XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), 1.0f, true);
+	AddLightDirectional(XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), 0.5f, true);
+	AddLightDirectional(XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), 1.0f, true);
+	// LIGHTS 3-4
+	AddLightPoint(XMFLOAT3(-2.0f, 3.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 1.0f), 1.0f, 10.0f, true);
+	AddLightPoint(XMFLOAT3(2.0f, 0.0f, 3.0f), XMFLOAT3(1.0f, 0.0f, 1.0f), 1.0f, 5.0f, true);
+}
+
+// --------------------------------------------------------
+// Adds a Light of a given type to the list of Lights
+// --------------------------------------------------------
+Light Game::AddLightDirectional(DirectX::XMFLOAT3 _direction, DirectX::XMFLOAT3 _color, float _intensity, bool _isActive)
+{
+	Light light = {};
+	if (lights.size() >= MAX_LIGHTS) return light; // If all light slots have been used, don't add light
+	light.Type = LIGHT_TYPE_DIRECTIONAL;
+	light.Direction = _direction;
+	light.Color = _color;
+	light.Intensity = _intensity;
+	light.Active = _isActive ? 1 : 0;
+	lights.push_back(light);
+	return light;
+}
+
+Light Game::AddLightPoint(DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _color, float _intensity, float _range, bool _isActive)
+{
+	Light light = {};
+	if (lights.size() >= MAX_LIGHTS) return light;
+	light.Type = LIGHT_TYPE_POINT;
+	light.Position = _position;
+	light.Color = _color;
+	light.Intensity = _intensity;
+	light.Range = _range;
+	light.Active = _isActive ? 1 : 0;
+	lights.push_back(light);
+	return light;
+}
+
+Light Game::AddLightSpot(DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _direction, DirectX::XMFLOAT3 _color, float _intensity, float _range, float _innerAngle, float _outerAngle, bool _isActive)
+{
+	Light light = {};
+	if (lights.size() >= MAX_LIGHTS) return light;
+	light.Type = LIGHT_TYPE_SPOT;
+	light.Position = _position;
+	light.Direction = _direction;
+	light.Color = _color;
+	light.Intensity = _intensity;
+	light.Range = _range;
+	light.SpotInnerAngle = _innerAngle;
+	light.SpotOuterAngle = _outerAngle;
+	light.Active = _isActive ? 1 : 0;
+	lights.push_back(light);
+	return light;
 }
 
 void Game::ImGuiInitialize()

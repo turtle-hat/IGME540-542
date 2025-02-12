@@ -12,7 +12,7 @@ struct VertexShaderInput
 	//  |    |                |
 	//  v    v                v
 	float3 localPosition	: POSITION;	// XYZ position
-	float2 UV				: TEXCOORD;	// The UV coordinates of the vertex
+	float2 uv				: TEXCOORD;	// The UV coordinates of the vertex
 	float3 Normal			: NORMAL;	// The vertex's normal vector
 	float3 Tangent			: TANGENT;	// The vertex's tangent vector
 };
@@ -30,7 +30,7 @@ struct VertexToPixel
 	//  |    |                |
 	//  v    v                v
 	float4 screenPosition	: SV_POSITION;	// XYZW position (System Value Position)
-	float2 UV				: TEXCOORD;		// The UV coordinates of the vertex
+	float2 uv				: TEXCOORD;		// The UV coordinates of the vertex
 };
 
 cbuffer PrimaryBuffer : register(b0)
@@ -64,7 +64,7 @@ VertexToPixel main(VertexShaderInput input)
 	matrix wvp = mul(projection, mul(view, world));
 	output.screenPosition = mul(wvp, float4(input.localPosition, 1.0f));
 
-	output.UV = input.UV;
+	output.uv = input.uv;
 
 	// Whatever we return will make its way through the pipeline to the
 	// next programmable stage we're using (the pixel shader for now)

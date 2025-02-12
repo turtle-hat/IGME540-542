@@ -98,9 +98,6 @@ struct Light
     float SpotOuterAngle;
     int Active;
     float Padding;
-};  
-
-// For HLSL
-#define MAX_SPECULAR_EXPONENT 256.0f
+};
 
 #endif

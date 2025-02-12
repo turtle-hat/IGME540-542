@@ -12,7 +12,7 @@ struct VertexToPixel
 	//  |    |                |
 	//  v    v                v
 	float4 screenPosition	: SV_POSITION;
-	float2 UV				: TEXCOORD;
+	float2 uv				: TEXCOORD;
 };
 
 Texture2D MapTexture : register(t0); // "t" registers for textures
@@ -31,5 +31,5 @@ SamplerState BasicSampler : register(s0); // "s" registers for samplers
 float4 main(VertexToPixel input) : SV_TARGET
 {
 	// Just return white
-	return MapTexture.Sample(BasicSampler, input.UV);
+	return MapTexture.Sample(BasicSampler, input.uv);
 }

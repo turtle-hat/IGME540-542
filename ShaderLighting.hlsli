@@ -1,9 +1,8 @@
 #ifndef __GGP_SHADER_LIGHTING__
 #define __GGP_SHADER_LIGHTING__
 
+#include "ShaderConstants.hlsli"
 #include "ShaderStructs.hlsli"
-
-#define LIGHT_COUNT	8
 
 
 
@@ -95,13 +94,13 @@ float3 LightLambertPhong(Light _light, float3 _lightDirectionIn, float3 _surface
 }
 
 // Calculates Lambert & Phong lighting result of an array of lights
-float3 CalculateLightingLambertPhong(Light _lights[LIGHT_COUNT], float3 _lightAmbient, float3 _surfaceNormal, float3 _surfaceColor, float _surfaceRoughness, float _surfaceSpecular, float3 _surfaceWorldPos, float3 _cameraPosition)
+float3 CalculateLightingLambertPhong(Light _lights[MAX_LIGHTS], float3 _lightAmbient, float3 _surfaceNormal, float3 _surfaceColor, float _surfaceRoughness, float _surfaceSpecular, float3 _surfaceWorldPos, float3 _cameraPosition)
 {
     // Start accumulator with ambient light value
     float3 lightsFinal = _lightAmbient;
 
 	// For each light in the scene
-    for (uint i = 0; i < LIGHT_COUNT; i++)
+    for (uint i = 0; i < MAX_LIGHTS; i++)
     {
 		// If it's active
         if (_lights[i].Active)
@@ -291,13 +290,13 @@ float3 LightLambertCookTorrance(Light _light, float3 _lightDirectionOut, float3 
 }
 
 // Calculates physically based Lambert & Cook-Torrance lighting result of an array of lights
-float3 CalculateLightingLambertCookTorrance(Light _lights[LIGHT_COUNT], float3 _surfaceNormal, float3 _surfaceColor, float _surfaceRoughness, float _surfaceMetalness, float3 _surfaceWorldPos, float3 _cameraPosition)
+float3 CalculateLightingLambertCookTorrance(Light _lights[MAX_LIGHTS], int _lightCount, float3 _surfaceNormal, float3 _surfaceColor, float _surfaceRoughness, float _surfaceMetalness, float3 _surfaceWorldPos, float3 _cameraPosition)
 {
     // Start accumulator with nothing
     float3 lightsFinal = 0.0f;
 
 	// For each light in the scene
-    for (uint i = 0; i < LIGHT_COUNT; i++)
+    for (uint i = 0; i < _lightCount; i++)
     {
 		// If it's active
         if (_lights[i].Active)

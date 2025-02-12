@@ -1,0 +1,8 @@
+#ifndef __GGP_SHADER_CONSTANTS__
+#define __GGP_SHADER_CONSTANTS__
+
+#define MAX_LIGHTS	64
+// For HLSL
+#define MAX_SPECULAR_EXPONENT 256.0f
+
+#endif
