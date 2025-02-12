@@ -70,6 +70,7 @@ namespace Graphics
 	bool VsyncState();
 	std::wstring APIName();
 	unsigned int SwapChainIndex();
+	SIZE_T GetCBVSRVDescriptorHeapIncrementSize();
 
 	// General functions
 	HRESULT Initialize(unsigned int windowWidth, unsigned int windowHeight, HWND windowHandle, bool vsyncIfPossible);

@@ -59,13 +59,10 @@ private:
 	// Pipeline
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
-	
-	// SIMULATION STATE
-	bool isInitialized;
 
 	// CAMERAS
 	// The index of the camera currently in use
-	unsigned int cameraCurrent;
+	int pCameraCurrent;
 	std::vector<std::shared_ptr<Camera>> cameras;
 
 	// LIGHTS
@@ -89,5 +86,19 @@ private:
 	// Other graphics data
 	D3D12_VIEWPORT viewport{};
 	D3D12_RECT scissorRect{};
+
+
+
+	// SIMULATION STATE
+	// All start with a "p" for "parameter"
+
+	// Whether parameters have been initialized
+	bool isInitialized;
+	// The background color used by Direct3D
+	float pBackgroundColor[4];
+	// How fast to rotate the objects
+	float pObjectRotationSpeed;
+
+	const char* LIGHT_TYPE_STRINGS[3] = { "Directional", "Point", "Spot" };
 };
 

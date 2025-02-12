@@ -57,6 +57,11 @@ float Material::GetMetalness()
 	return metalness;
 }
 
+int Material::GetNumTextures()
+{
+	return highestTextureSlotInUse + 1;
+}
+
 void Material::SetPipelineState(Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso)
 {
 	pso = _pso;

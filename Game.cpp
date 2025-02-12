@@ -312,7 +312,7 @@ void Game::OnResize()
 	if (isInitialized) {
 		// Resize camera
 		if (cameras.size() > 0) {
-			cameras[cameraCurrent]->SetAspect((Window::Width() + 0.0f) / Window::Height());
+			cameras[pCameraCurrent]->SetAspect((Window::Width() + 0.0f) / Window::Height());
 		}
 	}
 }
@@ -328,11 +328,11 @@ void Game::Update(float deltaTime, float totalTime)
 		Window::Quit();
 
 	// Update current camera
-	cameras[cameraCurrent]->Update(deltaTime);
+	cameras[pCameraCurrent]->Update(deltaTime);
 
 	// Rotate meshes
 	for (unsigned int i = 0; i < entities.size(); i++) {
-		entities[i]->GetTransform()->Rotate(0.0f, deltaTime, 0.0f);
+		entities[i]->GetTransform()->Rotate(0.0f, pObjectRotationSpeed * deltaTime, 0.0f);
 	}
 
 	ImGuiUpdate(deltaTime);
@@ -359,14 +359,11 @@ void Game::Draw(float deltaTime, float totalTime)
 		rb.Transition.StateAfter	= D3D12_RESOURCE_STATE_RENDER_TARGET;
 		rb.Transition.Subresource	= D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		Graphics::CommandList->ResourceBarrier(1, &rb);
-
-		// Background color (Cornflower Blue in this case) for clearing
-		float color[] = { 0.4f, 0.6f, 0.75f, 1.0f };
 		
 		// Clear the RTV
 		Graphics::CommandList->ClearRenderTargetView(
 			Graphics::RTVHandles[Graphics::SwapChainIndex()],
-			color,
+			pBackgroundColor,
 			0, 0); // No scissor rectangles
 
 		// Clear the depth buffer, too
@@ -404,7 +401,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		// RENDER SCENE
 
 		// Grab the current Camera
-		std::shared_ptr<Camera> camera = cameras[cameraCurrent];
+		std::shared_ptr<Camera> camera = cameras[pCameraCurrent];
 
 		// Collect base vertex shader data that will be used for all Entities
 		VertexShaderExternalData vsBaseData = {};
@@ -636,6 +633,8 @@ void Game::CreateCameras()
 	orthoXZ->SetLookSpeed(1.0f);
 	auto orthoXY = AddCamera("C_OrthoXY",	XMFLOAT3(0.0f, 0.0f, -100.0f),	XMFLOAT3(0.0f, 0.0f, 0.0f),					aspect, true);
 	orthoXY->SetLookSpeed(1.0f);
+	
+	pCameraCurrent = 0;
 }
 
 // --------------------------------------------------------
@@ -790,9 +789,9 @@ void Game::ImGuiInitialize()
 	ImGui_ImplDX12_Init(&init_info);
 
 	// Pick a style (uncomment one of these 3)
-	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
-	//ImGui::StyleColorsClassic();
+	ImGui::StyleColorsClassic();
 }
 
 void Game::ImGuiUpdate(float _deltaTime)
@@ -821,6 +820,391 @@ void Game::ImGuiUpdate(float _deltaTime)
 
 void Game::ImGuiBuildInterface()
 {
+	ImGui::Begin("Inspector");
+
+	if (ImGui::CollapsingHeader("App Details")) {				// Statistics about the app window and performance; no input elements
+		if (ImGui::TreeNode("Window")) {							// Meta stats about the window, mouse, and other stuff outside the simulation
+			ImGui::Spacing();
+			ImVec2 mousePos = ImGui::GetIO().MousePos;
+
+			ImGui::Text("Resolution:   %6dx %6d", Window::Width(), Window::Height());
+			ImGui::SetItemTooltip("Window resolution in pixels");
+
+			ImGui::Text("Mouse (px):  (%6d, %6d)", (int)mousePos.x, (int)mousePos.y);
+			ImGui::SetItemTooltip("Mouse position in pixels,\nstarting at top-left corner");
+
+			ImGui::Text("Mouse (NDC): (%+6.3f, %+6.3f)",
+				2.0f * (mousePos.x - (Window::Width() * 0.5f)) / Window::Width(),
+				-2.0f * (mousePos.y - (Window::Height() * 0.5f)) / Window::Height()
+			);
+			ImGui::SetItemTooltip("Mouse position in Normalized Device Coordinates\n(-1 to 1), starting at top-left corner");
+
+			ImGui::Text("Aspect Ratio: %6.3f", ((Window::Width() + 0.0f) / Window::Height()));
+			ImGui::SetItemTooltip("Window aspect ratio (width/height)");
+
+			ImGui::TreePop();
+			ImGui::Spacing();
+		}
+		if (ImGui::TreeNode("Performance")) {						// Stats about the app's performance
+			ImGui::Spacing();
+
+			ImGui::Text("Framerate:    %6dfps", (int)ImGui::GetIO().Framerate);
+
+			ImGui::Text("Delta Time:   %6dus", (int)(ImGui::GetIO().DeltaTime * 1000000));
+			ImGui::SetItemTooltip("Time between frames in microseconds\n(I didn't want to break things by trying to print the mu)");
+
+			ImGui::TreePop();
+			ImGui::Spacing();
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Settings")) {					// General settings parameters for graphics and simulation
+		ImGui::Spacing();
+
+		ImGui::ColorEdit3("Background Color", pBackgroundColor);
+		ImGui::Spacing();
+
+		ImGui::SliderFloat("Object Rotation", &pObjectRotationSpeed, -2.0f, 2.0f, "%.1f");
+		ImGui::Spacing();
+	}
+
+	if (ImGui::CollapsingHeader("Meshes")) {					// Info about each mesh
+		ImGui::Spacing();
+
+		ImGui::PushID("MESH");
+		for (int i = 0; i < meshes.size(); i++) {
+
+			// Each mesh gets its own Tree Node
+			ImGui::PushID(i);
+			if (ImGui::TreeNode("", "(%06d) %s", i, meshes[i]->GetName())) {
+				ImGui::Spacing();
+
+				ImGui::Text("Triangles: %6d", meshes[i]->GetIndexCount() / 3);
+				ImGui::Text("Vertices:  %6d", meshes[i]->GetVertexCount());
+				ImGui::Text("Indices:   %6d", meshes[i]->GetIndexCount());
+
+				ImGui::TreePop();
+				ImGui::Spacing();
+			}
+			ImGui::PopID();
+		}
+		ImGui::PopID();
+
+		ImGui::Spacing();
+	}
+
+	if (ImGui::CollapsingHeader("Materials")) {					// Info about each material
+		ImGui::Spacing();
+
+		ImGui::PushID("MATERIAL");
+		for (int i = 0; i < materials.size(); i++) {
+
+			// Each material gets its own Tree Node
+			ImGui::PushID(i);
+			if (ImGui::TreeNode("", "(%06d) %s", i, materials[i]->GetName())) {
+				ImGui::Spacing();
+
+				// Get material's tint as a float array
+				XMFLOAT3 tint_xm = materials[i]->GetColorTint();
+				float tint_f[3] = { tint_xm.x, tint_xm.y, tint_xm.z };
+				float roughness = materials[i]->GetRoughness();
+				float metalness = materials[i]->GetMetalness();
+				XMFLOAT2 uv_pos = materials[i]->GetUVOffset();
+				XMFLOAT2 uv_sca = materials[i]->GetUVScale();
+
+				// If the user has edited the tint this frame, change the material's tint
+				if (ImGui::ColorEdit3("Tint", tint_f)) {
+					materials[i]->SetColorTint(XMFLOAT3(tint_f));
+				}
+				// If the user has edited the material's roughness this frame, change the material's roughness
+				if (ImGui::SliderFloat("Roughness", &roughness, 0.0f, 1.0f, "%.2f")) {
+					materials[i]->SetRoughness(roughness);
+				}
+				// If the user has edited the material's metalness this frame, change the material's metalness
+				if (ImGui::SliderFloat("Metalness", &metalness, 0.0f, 1.0f, "%.2f")) {
+					materials[i]->SetMetalness(metalness);
+				}
+				if (ImGui::DragFloat2("UV Offset", (float*)&uv_pos, 0.01f, NULL, NULL, "%.2f")) {
+					materials[i]->SetUVOffset(uv_pos);
+				}
+				if (ImGui::DragFloat2("UV Scale", (float*)&uv_sca, 0.01f, NULL, NULL, "%.2f")) {
+					materials[i]->SetUVScale(uv_sca);
+				}
+
+				int numTextures = materials[i]->GetNumTextures();
+				// If any textures exist, include texture images
+				if (numTextures > 0) {
+					D3D12_GPU_DESCRIPTOR_HANDLE textures = materials[i]->GetFinalGPUHandleForSRVs();
+
+					int non2DTextures = 0;
+					D3D12_GPU_DESCRIPTOR_HANDLE textureCurrent = textures;
+
+					ImGui::Text("Textures:");
+					for (int j = 0; j < numTextures; j++) {
+						// Increment texture ptr if it's the second texture
+						if (j > 0) {
+							textureCurrent.ptr += Graphics::GetCBVSRVDescriptorHeapIncrementSize();
+						}
+						
+						ImGui::Text("(%06d) GPU Handle: %p", j, textureCurrent);
+						// Get a description of the texture
+						D3D12_SHADER_RESOURCE_VIEW_DESC srvDescription = {};
+
+						// Only display the texture if it's a Texture2D
+						if (typeid(srvDescription.Texture2D) == typeid(D3D12_TEX2D_SRV)) { // Figure out which union member it's using
+							ImGui::Image(
+								(ImTextureID)textureCurrent.ptr,
+								ImVec2(256, 256),
+								ImVec2(uv_pos.x, uv_pos.y),
+								ImVec2(uv_pos.x + uv_sca.x, uv_pos.y + uv_sca.y)
+							);
+						}
+						else {
+							// Count the number of non-Texture2D textures
+							non2DTextures++;
+						}
+
+					}
+
+					// Print number of SRVs not displayed
+					if (non2DTextures > 0) {
+						ImGui::Text("(%d non-Texture2D SRV(s) not displayed)", non2DTextures);
+					}
+				}
+
+				ImGui::TreePop();
+				ImGui::Spacing();
+			}
+			ImGui::PopID();
+		}
+		ImGui::PopID();
+
+		ImGui::Spacing();
+	}
+
+	if (ImGui::CollapsingHeader("Entities")) {					// Info about each entity
+		ImGui::Spacing();
+
+		// Store the position, rotation, scale, and tint of each entity as they're read in
+
+
+		ImGui::PushID("ENTITY");
+		for (int i = 0; i < entities.size(); i++) {
+			// Get position, rotation, scale, and tint
+			XMFLOAT3 entityPos = entities[i]->GetTransform()->GetPosition();
+			XMFLOAT3 entityRot = entities[i]->GetTransform()->GetRotation();
+			XMFLOAT3 entitySca = entities[i]->GetTransform()->GetScale();
+
+			// Each entity gets its own Tree Node
+			ImGui::PushID(i);
+			if (ImGui::TreeNode("", "(%06d) %s", i, entities[i]->GetName())) {
+				ImGui::Spacing();
+
+				ImGui::Text("Mesh:      %s", (entities[i]->GetMesh()->GetName()));
+				ImGui::Text("Material:  %s", (entities[i]->GetMaterial()->GetName()));
+				ImGui::Spacing();
+
+				if (ImGui::DragFloat3("Position", &entityPos.x, 0.01f)) {
+					entities[i]->GetTransform()->SetPosition(entityPos);
+				}
+				if (ImGui::DragFloat3("Rotation", &entityRot.x, 0.01f)) {
+					entities[i]->GetTransform()->SetRotation(entityRot);
+				}
+				ImGui::SetItemTooltip("In radians");
+				if (ImGui::DragFloat3("Scale", &entitySca.x, 0.01f, 0.0f)) {
+					entities[i]->GetTransform()->SetScale(entitySca);
+				}
+				// Clamp scale to 0
+				if (entitySca.x < 0.0f) entitySca.x = 0.0f;
+				if (entitySca.y < 0.0f) entitySca.y = 0.0f;
+				if (entitySca.z < 0.0f) entitySca.z = 0.0f;
+
+				ImGui::TreePop();
+				ImGui::Spacing();
+			}
+			ImGui::PopID();
+		}
+		ImGui::PopID();
+
+		ImGui::Spacing();
+	}
+
+	if (ImGui::CollapsingHeader("Lights")) {					// Info about each light
+		ImGui::Spacing();
+
+		ImGui::PushID("LIGHT");
+		for (int i = 0; i < lights.size(); i++) {					// List of lights in the scene
+
+			// Each light gets its own Tree Node
+			ImGui::PushID(i);
+
+			bool active = lights[i].Active == 1;
+			ImGui::AlignTextToFramePadding();
+			if (ImGui::Checkbox("", &active)) {
+				lights[i].Active = active;
+			}
+			ImGui::SetItemTooltip("Toggle whether light is active");
+
+			ImGui::SameLine();
+			if (ImGui::TreeNode("node", "(%06d) %s", i, LIGHT_TYPE_STRINGS[lights[i].Type])) {
+				ImGui::Spacing();
+
+				ImGui::ColorEdit3("Color", &lights[i].Color.x);
+				if (ImGui::DragFloat("Intensity", &lights[i].Intensity, 0.1f, 0.0f, NULL, "%.1f")) {
+					lights[i].Intensity = max(lights[i].Intensity, 0.0f);
+				}
+
+				ImGui::Spacing();
+				ImGui::Text("Type:");
+				ImGui::RadioButton("Directional", &lights[i].Type, LIGHT_TYPE_DIRECTIONAL);
+				ImGui::SameLine();
+				ImGui::RadioButton("Point", &lights[i].Type, LIGHT_TYPE_POINT);
+				ImGui::SameLine();
+				ImGui::RadioButton("Spot", &lights[i].Type, LIGHT_TYPE_SPOT);
+
+				ImGui::Spacing();
+				if (lights[i].Type != LIGHT_TYPE_DIRECTIONAL) {
+					ImGui::DragFloat3("Position", &lights[i].Position.x, 0.01f);
+				}
+				if (lights[i].Type != LIGHT_TYPE_POINT) {
+					ImGui::DragFloat3("Direction", &lights[i].Direction.x, 0.01f);
+				}
+				if (lights[i].Type != LIGHT_TYPE_DIRECTIONAL) {
+					if (ImGui::DragFloat("Range", &lights[i].Range, 0.1f, 0.0f, NULL, "%.1f")) {
+						lights[i].Range = max(lights[i].Range, 0.0f);
+					}
+				}
+				if (lights[i].Type == LIGHT_TYPE_SPOT) {
+					if (ImGui::DragFloat("Spot Inner Angle", &lights[i].SpotInnerAngle, 0.01f, 0.0f, XM_PIDIV2, "%.2f")) {
+						if (lights[i].SpotOuterAngle <= lights[i].SpotInnerAngle) {
+							lights[i].SpotOuterAngle = lights[i].SpotInnerAngle + 0.01f;
+						}
+					}
+					ImGui::SetItemTooltip("In radians");
+					if (ImGui::DragFloat("Spot Outer Angle", &lights[i].SpotOuterAngle, 0.01f, 0.01f, XM_PIDIV2, "%.2f")) {
+						if (lights[i].SpotOuterAngle <= lights[i].SpotInnerAngle) {
+							lights[i].SpotInnerAngle = lights[i].SpotOuterAngle - 0.01f;
+						}
+					}
+					ImGui::SetItemTooltip("In radians");
+				}
+
+				ImGui::TreePop();
+				ImGui::Spacing();
+			}
+			ImGui::PopID();
+		}
+		ImGui::PopID();
+	}
+
+	if (ImGui::CollapsingHeader("Cameras")) {					// Info about each camera
+		ImGui::Spacing();
+
+		ImGui::PushID("CAMERA");
+		for (int i = 0; i < cameras.size(); i++) {
+			// Get position, rotation, scale, and tint
+			XMFLOAT3 cameraPos = cameras[i]->GetTransform()->GetPosition();
+			XMFLOAT3 cameraRot = cameras[i]->GetTransform()->GetRotation();
+			XMFLOAT3 cameraRight = cameras[i]->GetTransform()->GetRight();
+			XMFLOAT3 cameraUp = cameras[i]->GetTransform()->GetUp();
+			XMFLOAT3 cameraFwd = cameras[i]->GetTransform()->GetForward();
+			bool cameraMode = cameras[i]->GetProjectionMode();
+			float cameraMove = cameras[i]->GetMoveSpeed();
+			float cameraLook = cameras[i]->GetLookSpeed();
+			float cameraNear = cameras[i]->GetNearClip();
+			float cameraFar = cameras[i]->GetFarClip();
+
+			// Each camera gets its own Tree Node
+			ImGui::PushID(i);
+			ImGui::AlignTextToFramePadding();
+			ImGui::RadioButton("", &pCameraCurrent, i);
+			ImGui::SetItemTooltip("Set as active camera");
+
+			ImGui::SameLine();
+			if (ImGui::TreeNode("node", "(%06d) %s", i, cameras[i]->GetName())) {
+				ImGui::Spacing();
+
+				if (ImGui::Button(cameraMode ? "Mode: Orthographic" : "Mode: Perspective")) {
+					cameras[i]->ToggleProjectionMode();
+				}
+				if (cameraMode) {
+					float cameraWidth = cameras[i]->GetOrthographicWidth();
+					if (ImGui::DragFloat("Width", &cameraWidth, 1.0f, 1.0f, 1000.0f, "%.0f")) {
+						cameras[i]->SetOrthographicWidth(cameraWidth);
+					}
+					ImGui::SetItemTooltip("In world units");
+				}
+				else {
+					float cameraFov = (cameras[i]->GetFov() * 180 * XM_1DIVPI);
+					if (ImGui::DragFloat("Field of View", &cameraFov, 1.0f, 1.0f, 179.0f, "%.0f")) {
+						cameras[i]->SetFov(cameraFov * XM_PI / 180);
+					}
+					ImGui::SetItemTooltip("In degrees (stored as radians)");
+				}
+				ImGui::Spacing();
+
+				if (ImGui::DragFloat3("Position", &cameraPos.x, 0.01f)) {
+					cameras[i]->GetTransform()->SetPosition(cameraPos);
+				}
+				if (ImGui::DragFloat3("Rotation", &cameraRot.x, 0.01f)) {
+					cameras[i]->GetTransform()->SetRotation(cameraRot);
+				}
+				ImGui::SetItemTooltip("In radians");
+				ImGui::Text("Right:       (%+6.3f, %+6.3f, %+6.3f)", cameraRight.x, cameraRight.y, cameraRight.z);
+				ImGui::Text("Up:          (%+6.3f, %+6.3f, %+6.3f)", cameraUp.x, cameraUp.y, cameraUp.z);
+				ImGui::Text("Forward:     (%+6.3f, %+6.3f, %+6.3f)", cameraFwd.x, cameraFwd.y, cameraFwd.z);
+				ImGui::Spacing();
+
+				if (ImGui::DragFloat("Move Speed", &cameraMove, 0.1f, 0.1f, 100.0f, "%.1f", ImGuiSliderFlags_Logarithmic)) {
+					cameras[i]->SetMoveSpeed(cameraMove);
+				}
+				ImGui::SetItemTooltip("In units per second");
+				if (ImGui::DragFloat("Look Speed", &cameraLook, 0.01f, 0.01f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+					cameras[i]->SetLookSpeed(cameraLook);
+				}
+				ImGui::SetItemTooltip("In milliradians per pixel\nof mouse movement");
+				ImGui::Spacing();
+
+				if (ImGui::DragFloat("Near Clip", &cameraNear, 0.01f, 0.001f, 10.0f, "%.3f", ImGuiSliderFlags_Logarithmic)) {
+					if (cameraFar > cameraNear) {
+						cameras[i]->SetNearClip(cameraNear);
+					}
+					else {
+						cameras[i]->SetNearClip(cameraFar - 0.001f);
+					}
+				}
+				if (ImGui::DragFloat("Far Clip", &cameraFar, 1.0f, 11.0f, 10000.0f, "%.0f", ImGuiSliderFlags_Logarithmic)) {
+					if (cameraFar > cameraNear) {
+						cameras[i]->SetFarClip(cameraFar);
+					}
+					else {
+						cameras[i]->SetFarClip(floor(cameraNear) + 1.0f);
+					}
+				}
+
+				ImGui::TreePop();
+				ImGui::Spacing();
+			}
+			ImGui::PopID();
+
+		}
+		ImGui::PopID();
+
+		ImGui::Spacing();
+	}
+
+	if (ImGui::CollapsingHeader("Dear ImGui")) {				// Settings related to ImGui itself
+		ImGui::Spacing();
+
+		if (ImGui::Button("Toggle Dear ImGui Demo")) {				// Toggles the ImGui Demo window
+			igShowDemo = !igShowDemo;
+		}
+
+		ImGui::Spacing();
+	}
+
+	ImGui::End();
+
 	// Rendering
 	ImGui::Render();
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), Graphics::CommandList.Get());
@@ -838,7 +1222,11 @@ void Game::ImGuiBuildInterface()
 // --------------------------------------------------------
 void Game::InitializeParameters()
 {
-	cameraCurrent = 0;
-	igShowDemo = true;
+	pCameraCurrent = 0;
+	igShowDemo = false;
+	// Background color (Cornflower Blue in this case) for clearing
+	float bgColor[4] = {0.4f, 0.6f, 0.75f, 1.0f};
+	memcpy(pBackgroundColor, bgColor, sizeof(float) * 4);
+	pObjectRotationSpeed = 1.0f;
 }
 

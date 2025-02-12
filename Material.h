@@ -18,6 +18,7 @@ public:
 	const char* GetName();
 	float GetRoughness();
 	float GetMetalness();
+	int GetNumTextures();
 
 	// Setters
 	void SetPipelineState(Microsoft::WRL::ComPtr<ID3D12PipelineState> _pso);

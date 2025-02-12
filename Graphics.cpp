@@ -67,6 +67,11 @@ unsigned int Graphics::SwapChainIndex() {
 	return currentBackBufferIndex;
 }
 
+SIZE_T Graphics::GetCBVSRVDescriptorHeapIncrementSize()
+{
+	return cbvSrvDescriptorHeapIncrementSize;
+}
+
 // --------------------------------------------------------
 // Initializes the Graphics API, which requires window details.
 // 
