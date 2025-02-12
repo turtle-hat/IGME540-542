@@ -42,6 +42,8 @@ void Game::Initialize()
 	CreateGeometry();
 	CreateLights();
 
+	ImGuiInitialize();
+
 	// Game is now fully initialized
 	isInitialized = true;
 }
@@ -59,9 +61,9 @@ Game::~Game()
 	Graphics::WaitForGPU();
 
 	// ImGui clean up
-	/*ImGui_ImplDX11_Shutdown();
+	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();*/
+	ImGui::DestroyContext();
 }
 
 // --------------------------------------------------------
@@ -332,6 +334,8 @@ void Game::Update(float deltaTime, float totalTime)
 	for (unsigned int i = 0; i < entities.size(); i++) {
 		entities[i]->GetTransform()->Rotate(0.0f, deltaTime, 0.0f);
 	}
+
+	ImGuiUpdate(deltaTime);
 }
 
 
@@ -472,6 +476,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		}
 	}
 
+	// Build ImGui interface
+	ImGuiBuildInterface();
+
 	// Present
 	{
 		// Transition back to present
@@ -554,7 +561,7 @@ void Game::CreateMaterials()
 // --------------------------------------------------------
 D3D12_CPU_DESCRIPTOR_HANDLE Game::LoadTexture(const wchar_t* _path)
 {
-	D3D12_CPU_DESCRIPTOR_HANDLE newTexture = Graphics::LoadTexture(_path);
+	D3D12_CPU_DESCRIPTOR_HANDLE newTexture = Graphics::LoadTexture(_path, false); // Don't autogenerate mips, since they're ignored for now
 	textures.push_back(newTexture);
 	return newTexture;
 }
@@ -773,10 +780,14 @@ void Game::ImGuiInitialize()
 
 	// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
 	// (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
-	/*init_info.SrvDescriptorHeap = Graphics::CBVSRVDescriptorHeap.Get();
-	init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return .Alloc(out_cpu_handle, out_gpu_handle); };
-	init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle)			{ return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
-	ImGui_ImplDX12_Init(&init_info);*/
+	init_info.SrvDescriptorHeap = Graphics::CBVSRVDescriptorHeap.Get();
+	init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) {
+		return Graphics::ReserveDescriptorHeapSlot(out_cpu_handle, out_gpu_handle);
+	};
+	init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) {
+		return;
+	};
+	ImGui_ImplDX12_Init(&init_info);
 
 	// Pick a style (uncomment one of these 3)
 	ImGui::StyleColorsDark();
@@ -784,12 +795,35 @@ void Game::ImGuiInitialize()
 	//ImGui::StyleColorsClassic();
 }
 
-void Game::ImGuiUpdate()
+void Game::ImGuiUpdate(float _deltaTime)
 {
+	// Put this all in a helper method that is called from Game::Update()
+	// Feed fresh data to ImGui
+	ImGuiIO& io = ImGui::GetIO();
+	io.DeltaTime = _deltaTime;
+	io.DisplaySize.x = (float)Window::Width();
+	io.DisplaySize.y = (float)Window::Height();
+
+	// Reset the frame
+	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	// Determine new input capture
+	Input::SetKeyboardCapture(io.WantCaptureKeyboard);
+	Input::SetMouseCapture(io.WantCaptureMouse);
+
+	// Show the demo window if it's activated
+	if (igShowDemo) {
+		ImGui::ShowDemoWindow();
+	}
 }
 
 void Game::ImGuiBuildInterface()
 {
+	// Rendering
+	ImGui::Render();
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), Graphics::CommandList.Get());
 }
 
 
@@ -805,5 +839,6 @@ void Game::ImGuiBuildInterface()
 void Game::InitializeParameters()
 {
 	cameraCurrent = 0;
+	igShowDemo = true;
 }
 

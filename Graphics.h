@@ -90,6 +90,8 @@ namespace Graphics
 	D3D12_GPU_DESCRIPTOR_HANDLE FillNextConstantBufferAndGetGPUDescriptorHandle(
 		void* data,
 		unsigned int dataSizeInBytes);
+	// Descriptor Heap reservation for ImGui
+	void ReserveDescriptorHeapSlot(D3D12_CPU_DESCRIPTOR_HANDLE* reservedCPUHandle, D3D12_GPU_DESCRIPTOR_HANDLE* reservedGPUHandle);
 
 	// Command list & synchronization
 	void ResetAllocatorAndCommandList(int bufferIndex);

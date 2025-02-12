@@ -48,7 +48,7 @@ private:
 	Light AddLightPoint(DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _color, float _intensity, float _range, bool _isActive);
 	Light AddLightSpot(DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _direction, DirectX::XMFLOAT3 _color, float _intensity, float _range, float _innerAngle, float _outerAngle, bool _isActive);
 	void ImGuiInitialize();
-	void ImGuiUpdate();
+	void ImGuiUpdate(float _deltaTime);
 	void ImGuiBuildInterface();
 
 	// Note the usage of ComPtr below
@@ -82,6 +82,9 @@ private:
 
 	// ENTITIES
 	std::vector<std::shared_ptr<Entity>> entities;
+
+	// IMGUI
+	bool igShowDemo;
 
 	// Other graphics data
 	D3D12_VIEWPORT viewport{};
