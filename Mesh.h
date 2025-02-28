@@ -14,6 +14,8 @@ public:
 	Mesh(const char* _name, const wchar_t* _path);
 	~Mesh();
 	// Accessors for Mesh info
+	Microsoft::WRL::ComPtr<ID3D12Resource> GetVertexBuffer();
+	Microsoft::WRL::ComPtr<ID3D12Resource> GetIndexBuffer();
 	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView();
 	D3D12_INDEX_BUFFER_VIEW GetIndexBufferView();
 	int GetVertexCount();

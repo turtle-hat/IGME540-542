@@ -647,6 +647,53 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Graphics::CreateStaticBuffer(
 	return buffer;
 }
 
+// --------------------------------------------------------
+// Helper for creating a basic buffer
+// 
+// size      - How big should the buffer be in bytes
+// heapType  - What kind of D3D12 heap?  Default is D3D12_HEAP_TYPE_DEFAULT
+// state     - What state should the resulting resource be in?  Default is D3D12_RESOURCE_STATE_COMMON
+// flags     - Any special flags?  Default is D3D12_RESOURCE_FLAG_NONE
+// alignment - What's the buffer alignment?  Default is 0
+// 
+// Written by Prof. Chris Cascioli
+// --------------------------------------------------------
+Microsoft::WRL::ComPtr<ID3D12Resource> Graphics::CreateBuffer(
+	UINT64 size,
+	D3D12_HEAP_TYPE heapType,
+	D3D12_RESOURCE_STATES state,
+	D3D12_RESOURCE_FLAGS flags,
+	UINT64 alignment)
+{
+	Microsoft::WRL::ComPtr<ID3D12Resource> buffer;
+
+	// Describe the heap
+	D3D12_HEAP_PROPERTIES heapDesc = {};
+	heapDesc.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapDesc.CreationNodeMask = 1;
+	heapDesc.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	heapDesc.Type = heapType;
+	heapDesc.VisibleNodeMask = 1;
+
+	// Describe the resource
+	D3D12_RESOURCE_DESC desc = {};
+	desc.Alignment = alignment;
+	desc.DepthOrArraySize = 1;
+	desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	desc.Flags = flags;
+	desc.Format = DXGI_FORMAT_UNKNOWN;
+	desc.Height = 1;
+	desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	desc.MipLevels = 1;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.Width = size; // Size of the buffer
+
+	// Create the buffer
+	Device.Get()->CreateCommittedResource(&heapDesc, D3D12_HEAP_FLAG_NONE, &desc, state, 0, IID_PPV_ARGS(buffer.GetAddressOf()));
+	return buffer;
+}
+
 D3D12_CPU_DESCRIPTOR_HANDLE Graphics::LoadTexture(const wchar_t* file, bool generateMips)
 {
 	// Helper function from DXTK for uploading a resource

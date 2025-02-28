@@ -256,6 +256,16 @@ Mesh::~Mesh()
 	
 }
 
+Microsoft::WRL::ComPtr<ID3D12Resource> Mesh::GetVertexBuffer()
+{
+	return vertexBuffer;
+}
+
+Microsoft::WRL::ComPtr<ID3D12Resource> Mesh::GetIndexBuffer()
+{
+	return indexBuffer;
+}
+
 // --------------------------------------------------------
 // Returns a view to this Mesh's vertex buffer
 // --------------------------------------------------------

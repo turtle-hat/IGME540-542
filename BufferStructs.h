@@ -1,6 +1,7 @@
 #pragma once
 #include <DirectXMath.h>
 #include "ShaderConstants.hlsli"
+#include "Lights.h"
 
 struct VertexShaderExternalData
 {
@@ -25,4 +26,12 @@ struct PixelShaderExternalData
 
 	float metalness;
 	DirectX::XMFLOAT3 padding;
+};
+
+// Overall scene data for raytracing
+struct RaytracingSceneData
+{
+	DirectX::XMFLOAT4X4 inverseViewProjection;
+	DirectX::XMFLOAT3 cameraPosition;
+	float pad;
 };

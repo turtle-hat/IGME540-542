@@ -733,8 +733,8 @@ void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr
 	RaytracingSceneData sceneData = {};
 	sceneData.cameraPosition = camera->GetTransform()->GetPosition();
 
-	DirectX::XMFLOAT4X4 view = camera->GetView();
-	DirectX::XMFLOAT4X4 proj = camera->GetProjection();
+	DirectX::XMFLOAT4X4 view = camera->GetViewMatrix();
+	DirectX::XMFLOAT4X4 proj = camera->GetProjectionMatrix();
 	DirectX::XMMATRIX v = DirectX::XMLoadFloat4x4(&view);
 	DirectX::XMMATRIX p = DirectX::XMLoadFloat4x4(&proj);
 	DirectX::XMMATRIX vp = DirectX::XMMatrixMultiply(v, p);
