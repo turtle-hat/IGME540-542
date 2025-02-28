@@ -140,6 +140,9 @@
     <ClInclude Include="Lights.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RayTracing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="PS_Basic.hlsl">
@@ -158,6 +161,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="PS_BasicTexture.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="RayTracing.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
