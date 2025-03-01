@@ -8,6 +8,8 @@
 #include "Mesh.h"
 #include "Camera.h"
 
+// Class written by Prof. Chris Cascioli
+
 namespace RayTracing
 {
 	// --- GLOBAL VARS ---

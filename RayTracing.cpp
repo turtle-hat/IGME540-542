@@ -5,6 +5,9 @@
 
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_dx12.h"
+#include "ImGui/imgui_impl_win32.h"
 
 namespace RayTracing
 {
@@ -796,9 +799,9 @@ void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr
 		// Copy the raytracing output into the back buffer
 		DXRCommandList->CopyResource(currentBackBuffer.Get(), RaytracingOutput.Get());
 
-		// Back buffer back to PRESENT
+		// Back buffer back to RENDER_TARGET for ImGui
 		outputBarriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-		outputBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+		outputBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		DXRCommandList->ResourceBarrier(1, &outputBarriers[0]);
 	}
 

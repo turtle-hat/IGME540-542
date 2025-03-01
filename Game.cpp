@@ -188,7 +188,6 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	// Present
 	{
-		// Transition back to present
 		D3D12_RESOURCE_BARRIER rb = {};
 		rb.Type						= D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		rb.Flags					= D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -929,7 +928,7 @@ void Game::ImGuiBuildInterface()
 
 	// Rendering
 	ImGui::Render();
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), Graphics::CommandList.Get());
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), RayTracing::DXRCommandList.Get());
 }
 
 
