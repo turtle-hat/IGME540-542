@@ -2,7 +2,9 @@
 #define __GGP_SHADER_CONSTANTS__
 
 #define MAX_LIGHTS	64
-// For HLSL
 #define MAX_SPECULAR_EXPONENT 256.0f
+
+// Ensure this matches Raytracing shader define!
+#define MAX_INSTANCES_PER_BLAS 100
 
 #endif

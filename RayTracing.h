@@ -4,7 +4,9 @@
 #include <wrl/client.h>
 #include <memory>
 #include <string>
+#include <vector>
 
+#include "Entity.h"
 #include "Mesh.h"
 #include "Camera.h"
 
@@ -37,7 +39,6 @@ namespace RayTracing
 	inline Microsoft::WRL::ComPtr<ID3D12Resource> BLASScratchBuffer;
 	inline Microsoft::WRL::ComPtr<ID3D12Resource> TLASInstanceDescBuffer;
 	inline Microsoft::WRL::ComPtr<ID3D12Resource> TLAS;
-	inline Microsoft::WRL::ComPtr<ID3D12Resource> BLAS;
 
 	// Actual output resource
 	inline Microsoft::WRL::ComPtr<ID3D12Resource> RaytracingOutput;
@@ -62,8 +63,8 @@ namespace RayTracing
 		Microsoft::WRL::ComPtr<ID3D12Resource> currentBackBuffer);
 
 	// Helper functions for each initalization step
-	void CreateBottomLevelAccelerationStructureForMesh(Mesh* mesh);
-	void CreateTopLevelAccelerationStructureForScene();
+	MeshRayTracingData CreateBottomLevelAccelerationStructureForMesh(Mesh* mesh);
+	void CreateTopLevelAccelerationStructureForScene(std::vector<std::shared_ptr<Entity>> _entities);
 	void CreateRaytracingRootSignatures();
 	void CreateRaytracingPipelineState(std::wstring raytracingShaderLibraryFile);
 	void CreateShaderTable();
