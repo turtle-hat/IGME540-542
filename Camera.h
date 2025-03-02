@@ -24,8 +24,8 @@ public:
 	float GetNearClip();
 	float GetFarClip();
 	bool GetProjectionMode();
-	DirectX::XMFLOAT4X4 GetViewMatrix();
-	DirectX::XMFLOAT4X4 GetProjectionMatrix();
+	DirectX::XMFLOAT4X4 GetView();
+	DirectX::XMFLOAT4X4 GetProjection();
 
 	// Setters
 	void SetAspect(float _aspect);

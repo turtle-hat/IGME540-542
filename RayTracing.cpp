@@ -397,9 +397,13 @@ void RayTracing::CreateShaderTable()
 	// Which is largest?
 	ShaderTableRecordSize = max(shaderTableRayGenRecordSize, max(shaderTableMissRecordSize, shaderTableHitGroupRecordSize));
 
-	// How big should the table be?  Need a record for each of 3 shaders (in our simple demo)
-	UINT64 shaderTableSize = ShaderTableRecordSize * 3;
-	shaderTableSize = ALIGN(shaderTableSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
+	// How big should the table be?
+	UINT64 shaderTableSize = 0;
+	shaderTableSize += ShaderTableRecordSize; // One ray gen shader
+	shaderTableSize += ShaderTableRecordSize; // One miss shader
+	shaderTableSize += ShaderTableRecordSize * MaxHitGroupsInShaderTable;
+	shaderTableSize =
+		ALIGN(shaderTableSize, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
 
 	// Create the shader table buffer and map it so we can write to it
 	ShaderTable = Graphics::CreateBuffer(shaderTableSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -413,7 +417,15 @@ void RayTracing::CreateShaderTable()
 	memcpy(shaderTableData, RaytracingPipelineProperties->GetShaderIdentifier(L"Miss"), D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
 	shaderTableData += ShaderTableRecordSize;
 
-	memcpy(shaderTableData, RaytracingPipelineProperties->GetShaderIdentifier(L"HitGroup"), D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+	// Make sure each hit group also has the proper identifier
+	for (unsigned int i = 0; i < MaxHitGroupsInShaderTable; i++)
+	{
+		memcpy(
+			shaderTableData,
+			RaytracingPipelineProperties->GetShaderIdentifier(L"HitGroup"),
+			D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+		shaderTableData += ShaderTableRecordSize;
+	}
 
 	// We'll eventually need to memcpy per-object data to the shader table, but we don't have that yet
 
@@ -631,6 +643,9 @@ MeshRayTracingData RayTracing::CreateBottomLevelAccelerationStructureForMesh(Mes
 	}
 	// All done
 	ShaderTable->Unmap(0, 0);
+
+	// Pass back the raytracing data for this mesh
+	return rayTracingData;
 }
 
 
@@ -645,39 +660,65 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<std::sh
 	if (!dxrAvailable)
 		return;
 
-	// Describe the BLAS instance(s) that make up the TLAS
+	// Create vector of instance descriptions
 	std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instanceDescs;
 
-	for (std::shared_ptr<Entity> entity : _entities) {
-		MeshRayTracingData data = entity->GetMesh()->GetRaytracingData();
+	// Create a vector of instance IDs and another for per-BLAS entity data
+	std::vector<unsigned int> instanceIDs;
+	std::vector<RaytracingEntityData> entityData;
+	instanceIDs.resize(blasCount); // One per BLAS (mesh) - all starting at zero due to resize()
+	entityData.resize(blasCount);
 
-		D3D12_RAYTRACING_INSTANCE_DESC instanceDesc = {};
-		instanceDesc.InstanceID								= 0;
-		instanceDesc.InstanceContributionToHitGroupIndex	= 0;
-		instanceDesc.InstanceMask							= 0xFF;
-		instanceDesc.Transform[0][0]						= 1; // Setting up a simple identity matrix here
-		instanceDesc.Transform[1][1]						= 1;
-		instanceDesc.Transform[2][2]						= 1;
-		instanceDesc.AccelerationStructure					= data.BLAS->GetGPUVirtualAddress();
-		instanceDesc.Flags									= D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+	// Create an instance description for each entity
+	for (size_t i = 0; i < _entities.size(); i++)
+	{
+		// Grab this entity's transform and transpose to column major
+		DirectX::XMFLOAT4X4 transform = _entities[i]->GetTransform()->GetWorld();
+		XMStoreFloat4x4(&transform, XMMatrixTranspose(XMLoadFloat4x4(&transform)));
 
+		// Grab this mesh's index in the shader table
+		std::shared_ptr<Mesh> mesh = _entities[i]->GetMesh();
+		unsigned int meshBlasIndex = mesh->GetRaytracingData().HitGroupIndex;
 
+		// Create this description and add to our overall set of descriptions
+		D3D12_RAYTRACING_INSTANCE_DESC instDesc = {};
+		instDesc.InstanceContributionToHitGroupIndex = meshBlasIndex;
+		instDesc.InstanceID = instanceIDs[meshBlasIndex];
+		instDesc.InstanceMask = 0xFF;
+		memcpy(&instDesc.Transform, &transform, sizeof(float) * 3 * 4); // Copy first [3][4] elements
+		instDesc.AccelerationStructure = mesh->GetRaytracingData().BLAS->GetGPUVirtualAddress();
+		instDesc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+		instanceDescs.push_back(instDesc);
+
+		// Set up the entity data for this entity, too
+		// - mesh index tells us which cbuffer
+		// - instance ID tells us which instance in that cbuffer
+		DirectX::XMFLOAT3 c = _entities[i]->GetMaterial()->GetColorTint();
+		entityData[meshBlasIndex].color[instDesc.InstanceID] = DirectX::XMFLOAT4(c.x, c.y, c.z, 1);
+
+		// On to the next instance for this mesh
+		instanceIDs[meshBlasIndex]++;
 	}
 
-	
 
-	// The instance description actually needs to be in a buffer
-	// on the GPU, so we need to make that buffer and toss it in
-	// there ourselves (and keep the pointer long enough to finish the work)
-	TLASInstanceDescBuffer = Graphics::CreateBuffer(
-		sizeof(D3D12_RAYTRACING_INSTANCE_DESC),
-		D3D12_HEAP_TYPE_UPLOAD,
-		D3D12_RESOURCE_STATE_GENERIC_READ);
+	// Is our current description buffer too small?
+	if (sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * instanceDescs.size() > tlasInstanceDataSizeInBytes)
+	{
+		// Create a new buffer to hold instance descriptions, since they
+		// need to actually be on the GPU
+		TLASInstanceDescBuffer.Reset();
+		tlasInstanceDataSizeInBytes = sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * instanceDescs.size();
+
+		TLASInstanceDescBuffer = Graphics::CreateBuffer(
+			tlasInstanceDataSizeInBytes,
+			D3D12_HEAP_TYPE_UPLOAD,
+			D3D12_RESOURCE_STATE_GENERIC_READ);
+	}
 
 	// Copy the description into the new buffer
 	unsigned char* mapped = 0;
 	TLASInstanceDescBuffer->Map(0, 0, (void**)&mapped);
-	memcpy(mapped, &instanceDesc, sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
+	memcpy(mapped, &instanceDescs[0], sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * instanceDescs.size());
 	TLASInstanceDescBuffer->Unmap(0, 0);
 
 	// Describe our overall input so we can get sizing info
@@ -685,7 +726,7 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<std::sh
 	accelStructInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 	accelStructInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	accelStructInputs.InstanceDescs = TLASInstanceDescBuffer->GetGPUVirtualAddress();
-	accelStructInputs.NumDescs = 1;
+	accelStructInputs.NumDescs = (unsigned int)instanceDescs.size();
 	accelStructInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO accelStructPrebuildInfo = {};
@@ -695,21 +736,37 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<std::sh
 	accelStructPrebuildInfo.ScratchDataSizeInBytes = ALIGN(accelStructPrebuildInfo.ScratchDataSizeInBytes, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT);
 	accelStructPrebuildInfo.ResultDataMaxSizeInBytes = ALIGN(accelStructPrebuildInfo.ResultDataMaxSizeInBytes, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT);
 
-	// Create a scratch buffer so the device has a place to temporarily store data
-	TLASScratchBuffer = Graphics::CreateBuffer(
-		accelStructPrebuildInfo.ScratchDataSizeInBytes,
-		D3D12_HEAP_TYPE_DEFAULT,
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-		max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT));
 
-	// Create the final buffer for the TLAS
-	TLAS = Graphics::CreateBuffer(
-		accelStructPrebuildInfo.ResultDataMaxSizeInBytes,
-		D3D12_HEAP_TYPE_DEFAULT,
-		D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE,
-		D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-		max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT));
+	// Is our current scratch size too small?
+	if (accelStructPrebuildInfo.ScratchDataSizeInBytes > tlasScratchSizeInBytes)
+	{
+		// Create a new scratch buffer
+		TLASScratchBuffer.Reset();
+		tlasScratchSizeInBytes = accelStructPrebuildInfo.ScratchDataSizeInBytes;
+
+		TLASScratchBuffer = Graphics::CreateBuffer(
+			tlasScratchSizeInBytes,
+			D3D12_HEAP_TYPE_DEFAULT,
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+			D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT));
+	}
+
+	// Is our current tlas too small?
+	if (accelStructPrebuildInfo.ResultDataMaxSizeInBytes > tlasBufferSizeInBytes)
+	{
+		// Create a new tlas buffer
+		TLAS.Reset();
+		tlasBufferSizeInBytes = accelStructPrebuildInfo.ResultDataMaxSizeInBytes;
+
+		TLAS = Graphics::CreateBuffer(
+			accelStructPrebuildInfo.ResultDataMaxSizeInBytes,
+			D3D12_HEAP_TYPE_DEFAULT,
+			D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE,
+			D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			max(D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT));
+	}
+
 
 	// Describe the final TLAS and set up the build
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc = {};
@@ -719,19 +776,28 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<std::sh
 	DXRCommandList->BuildRaytracingAccelerationStructure(&buildDesc, 0, 0);
 
 	// Set up a barrier to wait until the TLAS is actually built to proceed
-	// Note: Probably unnecessary because we're about to execute and wait below,
-	//       but keeping this here in the event we adjust when we execute.
 	D3D12_RESOURCE_BARRIER tlasBarrier = {};
 	tlasBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
 	tlasBarrier.UAV.pResource = TLAS.Get();
 	tlasBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	DXRCommandList->ResourceBarrier(1, &tlasBarrier);
 
+	// Finalize the entity data cbuffer stuff and copy descriptors to shader table
+	unsigned char* tablePointer = 0;
+	ShaderTable->Map(0, 0, (void**)&tablePointer);
+	tablePointer += ShaderTableRecordSize * 2; // Get past raygen and miss shaders
+	for (int i = 0; i < entityData.size(); i++)
+	{
+		// Need to get to the first descriptor in this hit group's record
+		unsigned char* hitGroupPointer = tablePointer + ShaderTableRecordSize * i;
+		hitGroupPointer += D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES; // Get past identifier
+		hitGroupPointer += sizeof(D3D12_GPU_DESCRIPTOR_HANDLE); // Get past geometry SRV
 
-	// All done - execute, wait and reset command list
-	Graphics::CloseAndExecuteCommandList();
-	Graphics::WaitForGPU();
-	Graphics::ResetAllocatorAndCommandList(0);
+		// Copy the data to the CB ring buffer and grab associated CBV to place in shader table
+		D3D12_GPU_DESCRIPTOR_HANDLE cbv = Graphics::FillNextConstantBufferAndGetGPUDescriptorHandle(&entityData[i], sizeof(RaytracingEntityData));
+		memcpy(hitGroupPointer, &cbv, sizeof(D3D12_GPU_DESCRIPTOR_HANDLE));
+	}
+	ShaderTable->Unmap(0, 0);
 }
 
 
@@ -765,8 +831,8 @@ void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr
 	RaytracingSceneData sceneData = {};
 	sceneData.cameraPosition = camera->GetTransform()->GetPosition();
 
-	DirectX::XMFLOAT4X4 view = camera->GetViewMatrix();
-	DirectX::XMFLOAT4X4 proj = camera->GetProjectionMatrix();
+	DirectX::XMFLOAT4X4 view = camera->GetView();
+	DirectX::XMFLOAT4X4 proj = camera->GetProjection();
 	DirectX::XMMATRIX v = DirectX::XMLoadFloat4x4(&view);
 	DirectX::XMMATRIX p = DirectX::XMLoadFloat4x4(&proj);
 	DirectX::XMMATRIX vp = DirectX::XMMatrixMultiply(v, p);
@@ -828,9 +894,9 @@ void RayTracing::Raytrace(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr
 		// Copy the raytracing output into the back buffer
 		DXRCommandList->CopyResource(currentBackBuffer.Get(), RaytracingOutput.Get());
 
-		// Back buffer back to RENDER_TARGET for ImGui
+		// Back buffer to PRESENT
 		outputBarriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-		outputBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		outputBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
 		DXRCommandList->ResourceBarrier(1, &outputBarriers[0]);
 	}
 

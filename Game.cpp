@@ -48,7 +48,7 @@ void Game::Initialize()
 	CreateGeometry();
 	CreateLights();
 
-	ImGuiInitialize();
+	//ImGuiInitialize();
 
 	// Game is now fully initialized
 	isInitialized = true;
@@ -162,7 +162,7 @@ void Game::Update(float deltaTime, float totalTime)
 		entities[i]->GetTransform()->Rotate(0.0f, pObjectRotationSpeed * deltaTime, 0.0f);
 	}
 
-	ImGuiUpdate(deltaTime);
+	//ImGuiUpdate(deltaTime);
 }
 
 
@@ -177,25 +177,37 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	// Rendering here!
 	{
-		// RENDER SCENE
+		RayTracing::CreateTopLevelAccelerationStructureForScene(entities);
 
 		// Perform ray trace (which also copies the results to the back buffer)
 		RayTracing::Raytrace(cameras[pCameraCurrent], currentBackBuffer);
 	}
 
-	// Build ImGui interface
-	ImGuiBuildInterface();
+	// Display ImGui
+	{
+		/*D3D12_RESOURCE_BARRIER rb = {};
+		rb.Type						= D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		rb.Flags					= D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		rb.Transition.pResource		= currentBackBuffer.Get();
+		rb.Transition.StateBefore	= D3D12_RESOURCE_STATE_PRESENT;
+		rb.Transition.StateAfter	= D3D12_RESOURCE_STATE_RENDER_TARGET;
+		rb.Transition.Subresource	= D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		Graphics::CommandList->ResourceBarrier(1, &rb);*/
+
+		// Build ImGui interface
+		//ImGuiBuildInterface();
+	}
 
 	// Present
 	{
-		D3D12_RESOURCE_BARRIER rb = {};
+		/*D3D12_RESOURCE_BARRIER rb = {};
 		rb.Type						= D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		rb.Flags					= D3D12_RESOURCE_BARRIER_FLAG_NONE;
 		rb.Transition.pResource		= currentBackBuffer.Get();
 		rb.Transition.StateBefore	= D3D12_RESOURCE_STATE_RENDER_TARGET;
 		rb.Transition.StateAfter	= D3D12_RESOURCE_STATE_PRESENT;
 		rb.Transition.Subresource	= D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		Graphics::CommandList->ResourceBarrier(1, &rb);
+		Graphics::CommandList->ResourceBarrier(1, &rb);*/
 
 		// Must occur BEFORE present
 		Graphics::CloseAndExecuteCommandList();
@@ -312,9 +324,8 @@ void Game::CreateGeometry()
 
 
 
-	// Create a BLAS for a single mesh, then the TLAS for our “scene”
-	RayTracing::CreateBottomLevelAccelerationStructureForMesh(meshes[5].get());
-	RayTracing::CreateTopLevelAccelerationStructureForScene();
+	// Create the TLAS for our “scene”
+	RayTracing::CreateTopLevelAccelerationStructureForScene(entities);
 
 	// Finalize any initialization and wait for the GPU
 	// before proceeding to the game loop
@@ -928,7 +939,7 @@ void Game::ImGuiBuildInterface()
 
 	// Rendering
 	ImGui::Render();
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), RayTracing::DXRCommandList.Get());
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), Graphics::CommandList.Get());
 }
 
 

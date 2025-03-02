@@ -207,7 +207,7 @@ bool Camera::GetProjectionMode()
 /// Gets the Camera's View matrix
 /// </summary>
 /// <returns>The Camera's View matrix</returns>
-XMFLOAT4X4 Camera::GetViewMatrix()
+XMFLOAT4X4 Camera::GetView()
 {
 	return view;
 }
@@ -216,7 +216,7 @@ XMFLOAT4X4 Camera::GetViewMatrix()
 /// Gets the Camera's Projection matrix
 /// </summary>
 /// <returns>The Camera's Projection matrix</returns>
-XMFLOAT4X4 Camera::GetProjectionMatrix()
+XMFLOAT4X4 Camera::GetProjection()
 {
 	return projection;
 }
