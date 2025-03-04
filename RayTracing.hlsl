@@ -171,7 +171,7 @@ void RayGen()
 [shader("miss")]
 void Miss(inout RayPayload payload)
 {
-	// Nothing was hit, so return black for now.
+	// Nothing was hit, so return blue for now.
 	// Ideally this is where we would do skybox stuff!
     payload.color = float3(0.4f, 0.6f, 0.75f);
 }

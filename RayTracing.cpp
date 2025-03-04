@@ -149,14 +149,6 @@ void RayTracing::CreateRaytracingRootSignatures()
 
 	// Create a local root signature enabling shaders to have unique data from shader tables
 	{
-		// cbuffer for hit group data
-		D3D12_DESCRIPTOR_RANGE cbufferRange = {};
-		cbufferRange.BaseShaderRegister = 1;
-		cbufferRange.NumDescriptors = 1;
-		cbufferRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-		cbufferRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-		cbufferRange.RegisterSpace = 0;
-
 		// Table of 2 starting at register(t1)
 		D3D12_DESCRIPTOR_RANGE geometrySRVRange = {};
 		geometrySRVRange.BaseShaderRegister = 1;
@@ -165,20 +157,28 @@ void RayTracing::CreateRaytracingRootSignatures()
 		geometrySRVRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 		geometrySRVRange.RegisterSpace = 0;
 
+		// cbuffer for hit group data
+		D3D12_DESCRIPTOR_RANGE cbufferRange = {};
+		cbufferRange.BaseShaderRegister = 1;
+		cbufferRange.NumDescriptors = 1;
+		cbufferRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+		cbufferRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+		cbufferRange.RegisterSpace = 0;
+
 		// Two params: Tables for constant buffer and geometry
 		D3D12_ROOT_PARAMETER rootParams[2] = {};
 
-		// Constant buffer at register(b1)
+		// Range of SRVs for geometry (verts & indices)
 		rootParams[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 		rootParams[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 		rootParams[0].DescriptorTable.NumDescriptorRanges = 1;
-		rootParams[0].DescriptorTable.pDescriptorRanges = &cbufferRange;
+		rootParams[0].DescriptorTable.pDescriptorRanges = &geometrySRVRange;
 
-		// Range of SRVs for geometry (verts & indices)
+		// Constant buffer at register(b1)
 		rootParams[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 		rootParams[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 		rootParams[1].DescriptorTable.NumDescriptorRanges = 1;
-		rootParams[1].DescriptorTable.pDescriptorRanges = &geometrySRVRange;
+		rootParams[1].DescriptorTable.pDescriptorRanges = &cbufferRange;
 
 		// Create the local root sig (ensure we denote it as a local sig)
 		Microsoft::WRL::ComPtr<ID3DBlob> blob;

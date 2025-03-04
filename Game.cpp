@@ -37,6 +37,7 @@ void Game::Initialize()
 	isInitialized = false;
 	
 	InitializeParameters();
+	ImGuiInitialize();
 	// Initialize raytracing
 	RayTracing::Initialize(
 		Window::Width(),
@@ -48,7 +49,6 @@ void Game::Initialize()
 	CreateGeometry();
 	CreateLights();
 
-	//ImGuiInitialize();
 
 	// Game is now fully initialized
 	isInitialized = true;
@@ -150,6 +150,10 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
+	// Setup new frame for ImGui
+	ImGuiUpdate(deltaTime);
+	ImGuiBuildInterface();
+
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::KeyDown(VK_ESCAPE))
 		Window::Quit();
@@ -158,11 +162,20 @@ void Game::Update(float deltaTime, float totalTime)
 	cameras[pCameraCurrent]->Update(deltaTime);
 
 	// Rotate meshes
-	for (unsigned int i = 0; i < entities.size(); i++) {
-		entities[i]->GetTransform()->Rotate(0.0f, pObjectRotationSpeed * deltaTime, 0.0f);
-	}
+	for (unsigned int i = 1; i < entities.size(); i++) {
+		auto transform = entities[i]->GetTransform();
+		transform->Rotate(0.0f, pObjectRotationSpeed * deltaTime, 0.0f);
 
-	//ImGuiUpdate(deltaTime);
+		if (i > 3) {
+			XMFLOAT3 pos = transform->GetPosition();
+			transform->SetPosition(pos.x, sin(totalTime * 2.5f + (float)i) - 5.0f, pos.z);
+			transform->SetScale(
+				sin(totalTime + (float)i) * 0.5f + 1.0f,
+				sin(totalTime + (float)i) * 0.5f + 1.0f,
+				cos(totalTime + (float)i) * 0.5f + 1.0f
+			);
+		}
+	}
 }
 
 
@@ -185,29 +198,32 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	// Display ImGui
 	{
-		/*D3D12_RESOURCE_BARRIER rb = {};
-		rb.Type						= D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		rb.Flags					= D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		rb.Transition.pResource		= currentBackBuffer.Get();
-		rb.Transition.StateBefore	= D3D12_RESOURCE_STATE_PRESENT;
-		rb.Transition.StateAfter	= D3D12_RESOURCE_STATE_RENDER_TARGET;
-		rb.Transition.Subresource	= D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		Graphics::CommandList->ResourceBarrier(1, &rb);*/
+		// Transition back buffer back to render target
+		D3D12_RESOURCE_BARRIER imGuiRB = {};
+		imGuiRB.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		imGuiRB.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		imGuiRB.Transition.pResource = currentBackBuffer.Get();
+		imGuiRB.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+		imGuiRB.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		imGuiRB.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		Graphics::CommandList->ResourceBarrier(1, &imGuiRB);
 
-		// Build ImGui interface
-		//ImGuiBuildInterface();
+		// Rendering
+		ImGui::Render();
+		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), Graphics::CommandList.Get());
 	}
+
 
 	// Present
 	{
-		/*D3D12_RESOURCE_BARRIER rb = {};
+		D3D12_RESOURCE_BARRIER rb = {};
 		rb.Type						= D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		rb.Flags					= D3D12_RESOURCE_BARRIER_FLAG_NONE;
 		rb.Transition.pResource		= currentBackBuffer.Get();
 		rb.Transition.StateBefore	= D3D12_RESOURCE_STATE_RENDER_TARGET;
 		rb.Transition.StateAfter	= D3D12_RESOURCE_STATE_PRESENT;
 		rb.Transition.Subresource	= D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		Graphics::CommandList->ResourceBarrier(1, &rb);*/
+		Graphics::CommandList->ResourceBarrier(1, &rb);
 
 		// Must occur BEFORE present
 		Graphics::CloseAndExecuteCommandList();
@@ -244,8 +260,8 @@ void Game::CreateMaterials()
 	auto tBronzeNR		= LoadTexture(L"Assets/Textures/T_bronze_NR.png");
 	auto tCobblestoneAM = LoadTexture(L"Assets/Textures/T_cobblestone_AM.png");
 	auto tCobblestoneNR = LoadTexture(L"Assets/Textures/T_cobblestone_NR.png");
-	//auto tFloorAM		= LoadTexture(L"Assets/Textures/T_floor_AM.png");
-	//auto tFloorNR		= LoadTexture(L"Assets/Textures/T_floor_NR.png");
+	auto tFloorAM		= LoadTexture(L"Assets/Textures/T_floor_AM.png");
+	auto tFloorNR		= LoadTexture(L"Assets/Textures/T_floor_NR.png");
 	//auto tPaintAM		= LoadTexture(L"Assets/Textures/T_paint_AM.png");
 	//auto tPaintNR		= LoadTexture(L"Assets/Textures/T_paint_NR.png");
 	//auto tRoughAM		= LoadTexture(L"Assets/Textures/T_rough_AM.png");
@@ -257,20 +273,29 @@ void Game::CreateMaterials()
 
 	// Create Materials
 
-	// MATERIALS 0-2
+	// MATERIALS 0-3
 	auto matBronze		= AddMaterial("Mat_Bronze", pipelineState);
 	matBronze			->AddTexture(tBronzeAM, 0);
 	matBronze			->AddTexture(tBronzeNR, 1);
+	matBronze			->SetColorTint(XMFLOAT3(1.0f, 0.5f, 0.0f));
 	matBronze			->FinalizeMaterial();
 
 	auto matCobblestone	= AddMaterial("Mat_Cobblestone", pipelineState);
 	matCobblestone		->AddTexture(tCobblestoneAM, 0);
 	matCobblestone		->AddTexture(tCobblestoneNR, 1);
+	matCobblestone		->SetColorTint(XMFLOAT3(0.1f, 0.1f, 0.1f));
 	matCobblestone		->FinalizeMaterial();
+
+	auto matFloor		= AddMaterial("Mat_Floor", pipelineState);
+	matFloor			->AddTexture(tFloorAM, 0);
+	matFloor			->AddTexture(tFloorNR, 1);
+	matFloor			->SetColorTint(XMFLOAT3(0.2f, 0.3f, 0.25f));
+	matFloor			->FinalizeMaterial();
 
 	auto matScratched	= AddMaterial("Mat_Scratched", pipelineState);
 	matScratched		->AddTexture(tScratchedAM, 0);
 	matScratched		->AddTexture(tScratchedNR, 1);
+	matScratched		->SetColorTint(XMFLOAT3(1.0f, 1.0f, 0.1f));
 	matScratched		->FinalizeMaterial();
 }
 
@@ -317,12 +342,32 @@ void Game::CreateGeometry()
 	meshes.push_back(make_shared<Mesh>("M_Sphere",				FixPath(L"../../Assets/Models/sphere.obj").c_str()));
 	meshes.push_back(make_shared<Mesh>("M_Torus",				FixPath(L"../../Assets/Models/torus.obj").c_str()));
 
-	// ENTITIES 0-2
+	// ENTITIES 0-3
+	auto floor = AddEntity("E_Floor",	0,	2,	XMFLOAT3(0.0f, -110.0f, 0.0f));
+	floor->GetTransform()->SetScale(100.0f, 100.0f, 100.0f);
+
 	AddEntity("E_Cube",		0,	0,	XMFLOAT3(-3.0f,	0.0f,	0.0f));
 	AddEntity("E_Helix",	2,	1,	XMFLOAT3( 0.0f,	0.0f,	0.0f));
-	AddEntity("E_Sphere",	5,	2,	XMFLOAT3( 3.0f,	0.0f,	0.0f));
+	AddEntity("E_Sphere",	5,	3,	XMFLOAT3( 3.0f,	0.0f,	0.0f));
 
+	// Get how many materials have been created so we can index past them
+	int firstGeneratedMaterialIndex = materials.size();
 
+	// MATERIALS & ENTITIES 3-22
+	for (int i = 0; i < 25; i++) {
+		auto newMat = AddMaterial("Mat_Generated", pipelineState);
+		newMat->SetColorTint(XMFLOAT3(
+			(float)rand() / RAND_MAX,
+			(float)rand() / RAND_MAX,
+			(float)rand() / RAND_MAX
+		));
+
+		AddEntity("E_Generated", 0, firstGeneratedMaterialIndex + i, XMFLOAT3(
+			((i % 5) - 2) * 3,
+			-5.0f,
+			((i / 5) - 2) * 3
+		));
+	}
 
 	// Create the TLAS for our “scene”
 	RayTracing::CreateTopLevelAccelerationStructureForScene(entities);
@@ -497,33 +542,33 @@ Light Game::AddLightSpot(DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _directi
 
 void Game::ImGuiInitialize()
 {
+	// Reserve descriptor slot for ImGui's font texture
+	D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle;
+	Graphics::ReserveDescriptorHeapSlot(&cpuHandle, &gpuHandle);
+
 	// Initialize ImGui itself & platform/renderer backends
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGui_ImplWin32_Init(Window::Handle());
-	
-	ImGui_ImplDX12_InitInfo init_info = {};
-	init_info.Device = Graphics::Device.Get();
-	init_info.CommandQueue = Graphics::CommandQueue.Get();
-	init_info.NumFramesInFlight = Graphics::NumBackBuffers;
-	init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
-
-	// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
-	// (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
-	init_info.SrvDescriptorHeap = Graphics::CBVSRVDescriptorHeap.Get();
-	init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) {
-		return Graphics::ReserveDescriptorHeapSlot(out_cpu_handle, out_gpu_handle);
-	};
-	init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) {
-		return;
-	};
-	ImGui_ImplDX12_Init(&init_info);
-
 	// Pick a style (uncomment one of these 3)
 	//ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
 	ImGui::StyleColorsClassic();
+	ImGui_ImplWin32_Init(Window::Handle());
+	
+	ImGui_ImplDX12_InitInfo init_info = {};
+	init_info.CommandQueue = Graphics::CommandQueue.Get();
+	init_info.Device = Graphics::Device.Get();
+	init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+	init_info.LegacySingleSrvCpuDescriptor = cpuHandle;
+	init_info.LegacySingleSrvGpuDescriptor = gpuHandle;
+	init_info.NumFramesInFlight = Graphics::NumBackBuffers;
+	init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
+	// (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
+	init_info.SrvDescriptorHeap = Graphics::CBVSRVDescriptorHeap.Get();
+
+	ImGui_ImplDX12_Init(&init_info);
 }
 
 void Game::ImGuiUpdate(float _deltaTime)
@@ -543,15 +588,15 @@ void Game::ImGuiUpdate(float _deltaTime)
 	// Determine new input capture
 	Input::SetKeyboardCapture(io.WantCaptureKeyboard);
 	Input::SetMouseCapture(io.WantCaptureMouse);
-
-	// Show the demo window if it's activated
-	if (igShowDemo) {
-		ImGui::ShowDemoWindow();
-	}
 }
 
 void Game::ImGuiBuildInterface()
 {
+	// Show the demo window if it's activated
+	if (igShowDemo) {
+		ImGui::ShowDemoWindow();
+	}
+
 	ImGui::Begin("Inspector");
 
 	if (ImGui::CollapsingHeader("App Details")) {				// Statistics about the app window and performance; no input elements
@@ -936,10 +981,6 @@ void Game::ImGuiBuildInterface()
 	}
 
 	ImGui::End();
-
-	// Rendering
-	ImGui::Render();
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), Graphics::CommandList.Get());
 }
 
 
