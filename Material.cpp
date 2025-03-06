@@ -12,7 +12,8 @@ Material::Material(const char* _name, Microsoft::WRL::ComPtr<ID3D12PipelineState
 	metalness = 1.0f;
 
 	finalized = false;
-	highestTextureSlotInUse = 0;
+	// -1 means the Material has no textures
+	highestTextureSlotInUse = -1;
 	finalGPUHandleForSRVs = (D3D12_GPU_DESCRIPTOR_HANDLE)0;
 	textureSRVsBySlot[0] = (D3D12_CPU_DESCRIPTOR_HANDLE)0;
 }
@@ -100,7 +101,7 @@ void Material::AddTexture(D3D12_CPU_DESCRIPTOR_HANDLE _srv, unsigned int _slot)
 
 	textureSRVsBySlot[_slot] = _srv;
 	// If this is the highest texture slot the material has had assigned, set the marker accordingly
-	highestTextureSlotInUse = max(highestTextureSlotInUse, _slot);
+	highestTextureSlotInUse = max(highestTextureSlotInUse, (int)_slot);
 }
 
 void Material::FinalizeMaterial()
@@ -108,13 +109,16 @@ void Material::FinalizeMaterial()
 	// Don't continue if already finalized
 	if (finalized) return;
 
-	// Copy each texture SRV to the GPU
-	for (unsigned int i = 0; i <= highestTextureSlotInUse; i++) {
-		D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = Graphics::CopySRVsToDescriptorHeapAndGetGPUDescriptorHandle(textureSRVsBySlot[i], 1);
+	// If any textures have been bound
+	if (highestTextureSlotInUse > -1) {
+		// Copy each texture SRV to the GPU
+		for (int i = 0; i <= highestTextureSlotInUse; i++) {
+			D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = Graphics::CopySRVsToDescriptorHeapAndGetGPUDescriptorHandle(textureSRVsBySlot[i], 1);
 		
-		// Save GPU handle of first texture
-		if (i == 0) {
-			finalGPUHandleForSRVs = gpuHandle;
+			// Save GPU handle of first texture
+			if (i == 0) {
+				finalGPUHandleForSRVs = gpuHandle;
+			}
 		}
 	}
 

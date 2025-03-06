@@ -44,7 +44,7 @@ private:
 	bool finalized;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pso;
 	D3D12_CPU_DESCRIPTOR_HANDLE textureSRVsBySlot[128]{};
-	unsigned int highestTextureSlotInUse;
+	int highestTextureSlotInUse;
 	D3D12_GPU_DESCRIPTOR_HANDLE finalGPUHandleForSRVs;
 
 	// Name for UI

@@ -168,11 +168,11 @@ void Game::Update(float deltaTime, float totalTime)
 
 		if (i > 3) {
 			XMFLOAT3 pos = transform->GetPosition();
-			transform->SetPosition(pos.x, sin(totalTime * 2.5f + (float)i) - 5.0f, pos.z);
+			transform->SetPosition(pos.x, sinf(totalTime * 2.5f + (float)i) - 5.0f, pos.z);
 			transform->SetScale(
-				sin(totalTime + (float)i) * 0.5f + 1.0f,
-				sin(totalTime + (float)i) * 0.5f + 1.0f,
-				cos(totalTime + (float)i) * 0.5f + 1.0f
+				sinf(totalTime + (float)i) * 0.5f + 1.0f,
+				sinf(totalTime + (float)i) * 0.5f + 1.0f,
+				cosf(totalTime + (float)i) * 0.5f + 1.0f
 			);
 		}
 	}
@@ -198,6 +198,10 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	// Display ImGui
 	{
+		// Set render target and viewport for rasterization
+		Graphics::CommandList->OMSetRenderTargets(1, &Graphics::RTVHandles[Graphics::SwapChainIndex()], true, &Graphics::DSVHandle);
+		Graphics::CommandList->RSSetViewports(1, &viewport);
+
 		// Transition back buffer back to render target
 		D3D12_RESOURCE_BARRIER imGuiRB = {};
 		imGuiRB.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -351,7 +355,7 @@ void Game::CreateGeometry()
 	AddEntity("E_Sphere",	5,	3,	XMFLOAT3( 3.0f,	0.0f,	0.0f));
 
 	// Get how many materials have been created so we can index past them
-	int firstGeneratedMaterialIndex = materials.size();
+	int firstGeneratedMaterialIndex = (int)materials.size();
 
 	// MATERIALS & ENTITIES 3-22
 	for (int i = 0; i < 25; i++) {
@@ -363,9 +367,9 @@ void Game::CreateGeometry()
 		));
 
 		AddEntity("E_Generated", 0, firstGeneratedMaterialIndex + i, XMFLOAT3(
-			((i % 5) - 2) * 3,
+			(float)((i % 5) - 2) * 3,
 			-5.0f,
-			((i / 5) - 2) * 3
+			(float)((i / 5) - 2) * 3
 		));
 	}
 
@@ -404,11 +408,11 @@ void Game::CreateCameras()
 	float aspect = (Window::Width() + 0.0f) / Window::Height();
 	// CAMERAS 0-3
 	AddCamera("C_Main",		XMFLOAT3(0.0f, 0.0f, -5.0f),	XMFLOAT3(0.0f, 0.0f, 0.0f),					aspect, false);
-	auto orthoYZ = AddCamera("C_OrthoYZ",	XMFLOAT3(100.0f, 0.0f, 0.0f),	XMFLOAT3(0.0f, -XM_PIDIV2, 0.0f),			aspect, true);
+	auto orthoYZ = AddCamera("C_PlaneZY",	XMFLOAT3(20.0f, 0.0f, 0.0f),	XMFLOAT3(0.0f, -XM_PIDIV2, 0.0f),			aspect, false);
 	orthoYZ->SetLookSpeed(1.0f);
-	auto orthoXZ = AddCamera("C_OrthoXZ",	XMFLOAT3(0.0f, 100.0f, 0.0f),	XMFLOAT3(XM_PIDIV2 - 0.001f, 0.0f, 0.0f),	aspect, true);
+	auto orthoXZ = AddCamera("C_PlaneXZ",	XMFLOAT3(0.0f, 20.0f, 0.0f),	XMFLOAT3(XM_PIDIV2 - 0.001f, 0.0f, 0.0f),	aspect, false);
 	orthoXZ->SetLookSpeed(1.0f);
-	auto orthoXY = AddCamera("C_OrthoXY",	XMFLOAT3(0.0f, 0.0f, -100.0f),	XMFLOAT3(0.0f, 0.0f, 0.0f),					aspect, true);
+	auto orthoXY = AddCamera("C_PlaneXY",	XMFLOAT3(0.0f, 0.0f, -20.0f),	XMFLOAT3(0.0f, 0.0f, 0.0f),					aspect, false);
 	orthoXY->SetLookSpeed(1.0f);
 	
 	pCameraCurrent = 0;
@@ -718,7 +722,7 @@ void Game::ImGuiBuildInterface()
 
 					ImGui::Text("Textures:");
 					for (int j = 0; j < numTextures; j++) {
-						// Increment texture ptr if it's the second texture
+						// Increment texture ptr for textures after the first
 						if (j > 0) {
 							textureCurrent.ptr += Graphics::GetCBVSRVDescriptorHeapIncrementSize();
 						}
