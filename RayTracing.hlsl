@@ -173,7 +173,11 @@ void Miss(inout RayPayload payload)
 {
 	// Nothing was hit, so return blue for now.
 	// Ideally this is where we would do skybox stuff!
-    payload.color = float3(0.4f, 0.6f, 0.75f);
+    payload.color = lerp(
+		float3(0.6f, 0.9f, 1.0f),
+		float3(0.4f, 0.6f, 0.75f),
+		WorldRayDirection().y
+	);
 }
 
 
