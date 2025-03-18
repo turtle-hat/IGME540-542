@@ -6,5 +6,6 @@
 
 // Ensure this matches Raytracing shader define!
 #define MAX_INSTANCES_PER_BLAS 100
+#define PI 3.1415926535897932f;
 
 #endif

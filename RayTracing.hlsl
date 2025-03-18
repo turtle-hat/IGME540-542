@@ -1,4 +1,4 @@
-
+#include "ShaderConstants.hlsli"
 
 // === Structs ===
 
@@ -36,7 +36,6 @@ cbuffer SceneData : register(b0)
 };
 
 // Ensure this matches C++ buffer struct define!
-#define MAX_INSTANCES_PER_BLAS 100
 cbuffer ObjectData : register(b1)
 {
     float4 entityColor[MAX_INSTANCES_PER_BLAS];

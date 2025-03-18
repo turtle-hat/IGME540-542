@@ -251,6 +251,7 @@
     <None Include="ShaderConstants.hlsli" />
     <None Include="ShaderLighting.hlsli" />
     <None Include="ShaderNormals.hlsli" />
+    <None Include="ShaderRandom.hlsli" />
     <None Include="ShaderStructs.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

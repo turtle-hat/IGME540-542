@@ -184,5 +184,8 @@
     <None Include="ShaderConstants.hlsli">
       <Filter>Shaders\ShaderIncludes</Filter>
     </None>
+    <None Include="ShaderRandom.hlsli">
+      <Filter>Shaders\ShaderIncludes</Filter>
+    </None>
   </ItemGroup>
 </Project>
