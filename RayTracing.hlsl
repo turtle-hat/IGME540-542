@@ -1,4 +1,5 @@
 #include "ShaderConstants.hlsli"
+#include "ShaderRandom.hlsli"
 
 // === Structs ===
 
@@ -20,6 +21,8 @@ static const uint VertexSizeInBytes = 11 * 4;
 struct RayPayload
 {
 	float3 color;
+	uint recursionDepth;
+	uint rayPerPixelIndex;
 };
 
 // Note: We'll be using the built-in BuiltInTriangleIntersectionAttributes struct
@@ -142,27 +145,42 @@ void RayGen()
 	// Get the ray indices
 	uint2 rayIndices = DispatchRaysIndex().xy;
 
-	// Calculate the ray from the camera through a particular
-	// pixel of the output buffer using this shader's indices
-	RayDesc ray = CalcRayFromCamera(rayIndices);
+	// Accumulate total color
+	float3 totalColor = float3(0.0f, 0.0f, 0.0f);
 
-	// Set up the payload for the ray
-	// This initializes the struct to all zeros
-	RayPayload payload = (RayPayload)0;
+	for (int i = 0; i < RAYS_PER_PIXEL; i++)
+	{
+		// Calculate new indices for the ray
+		float2 adjustedIndices = (float2)rayIndices;
+		float rayIndexFraction = (float)i / RAYS_PER_PIXEL;
+		adjustedIndices += rand2(rayIndices.xy * rayIndexFraction);
 
-	// Perform the ray trace for this ray
-	TraceRay(
-		SceneTLAS,
-		RAY_FLAG_NONE,
-		0xFF,
-		0,
-		0,
-		0,
-		ray,
-		payload);
+		// Calculate the ray from the camera through a particular
+		// pixel of the output buffer using this shader's indices
+		RayDesc ray = CalcRayFromCamera(adjustedIndices);
+
+		// Set up the payload for the ray
+		// This initializes the struct to all zeros
+		RayPayload payload = (RayPayload)0;
+		// Except for color, which needs to be white
+		payload.color = float3(1.0f, 1.0f, 1.0f);
+
+		// Perform the ray trace for this ray
+		TraceRay(
+			SceneTLAS,
+			RAY_FLAG_NONE,
+			0xFF,
+			0,
+			0,
+			0,
+			ray,
+			payload);
+
+		totalColor += payload.color;
+	}
 
 	// Set the final color of the buffer
-	OutputColor[rayIndices] = float4(payload.color, 1);
+	OutputColor[rayIndices] = float4(totalColor / RAYS_PER_PIXEL, 1);
 }
 
 
@@ -172,7 +190,7 @@ void Miss(inout RayPayload payload)
 {
 	// Nothing was hit, so return blue for now.
 	// Ideally this is where we would do skybox stuff!
-    payload.color = lerp(
+    payload.color *= lerp(
 		float3(0.6f, 0.9f, 1.0f),
 		float3(0.4f, 0.6f, 0.75f),
 		WorldRayDirection().y
@@ -184,6 +202,39 @@ void Miss(inout RayPayload payload)
 [shader("closesthit")]
 void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes hitAttributes)
 {
-    uint instanceID = InstanceID();
-    payload.color = entityColor[instanceID].rgb;
+	// If we've hit the max recursion depth, return black
+	if (payload.recursionDepth >= MAX_RAY_RECURSIONS) {
+		payload.color = float3(0.0f, 0.0f, 0.0f);
+		return;
+	}
+
+	// Otherwise, add this entity's color to the payload and trace again
+    payload.color *= entityColor[InstanceID()].rgb;
+
+	// Get the details of the hit triangle
+	Vertex hit = InterpolateVertices(PrimitiveIndex(), hitAttributes.barycentrics);
+	// Get entity's normal in world space
+	float3 normal_WS = normalize(mul(hit.normal, (float3x3)ObjectToWorld4x3()));
+
+	// Create a new ray
+	RayDesc ray;
+	// Find hit position
+	ray.Origin = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
+	// Reflect to find direction
+	ray.Direction = reflect(WorldRayDirection(), normal_WS);
+	ray.TMin = 0.0001f;
+	ray.TMax = 1000.0f;
+
+	// Increase number of recursions and trace again
+	payload.recursionDepth++;
+
+	TraceRay(
+		SceneTLAS,
+		RAY_FLAG_NONE,
+		0xFF,
+		0,
+		0,
+		0,
+		ray,
+		payload);
 }

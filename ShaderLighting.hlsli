@@ -17,9 +17,6 @@ static const float F0_NON_METAL = 0.04f;
 // Minimum roughness for when spec distribution function denominator goes to zero
 static const float MIN_ROUGHNESS = 0.0000001f; // 6 zeros after decimal
 
-// Handy to have this as a constant
-static const float PI = 3.14159265359f;
-
 
 
 
