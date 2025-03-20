@@ -220,10 +220,17 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 	RayDesc ray;
 	// Find hit position
 	ray.Origin = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
-	// Reflect to find direction
-	ray.Direction = reflect(WorldRayDirection(), normal_WS);
 	ray.TMin = 0.0001f;
 	ray.TMax = 1000.0f;
+	
+	// Generate a random bounce
+	float2 uv = (float2)DispatchRaysIndex() / (float2)DispatchRaysDimensions();
+	float2 rng = rand2(uv * (payload.recursionDepth + 1) + payload.rayPerPixelIndex + RayTCurrent());
+	float3 randomBounce = RandomVectorHemisphere(rand2(rng), normal_WS);
+
+	// Reflect to find direction
+	ray.Direction = randomBounce;
+	//ray.Direction = reflect(WorldRayDirection(), normal_WS);
 
 	// Increase number of recursions and trace again
 	payload.recursionDepth++;

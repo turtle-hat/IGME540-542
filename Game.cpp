@@ -188,6 +188,13 @@ void Game::Draw(float deltaTime, float totalTime)
 	Microsoft::WRL::ComPtr<ID3D12Resource> currentBackBuffer =
 		Graphics::BackBuffers[Graphics::SwapChainIndex()];
 
+	// Create a resource barrier that can be changed quickly for different transitions
+	D3D12_RESOURCE_BARRIER rb = {};
+	rb.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	rb.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	rb.Transition.pResource = currentBackBuffer.Get();
+	rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
 	// Rendering here!
 	{
 		RayTracing::CreateTopLevelAccelerationStructureForScene(entities);
@@ -203,14 +210,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		Graphics::CommandList->RSSetViewports(1, &viewport);
 
 		// Transition back buffer back to render target
-		D3D12_RESOURCE_BARRIER imGuiRB = {};
-		imGuiRB.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		imGuiRB.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		imGuiRB.Transition.pResource = currentBackBuffer.Get();
-		imGuiRB.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-		imGuiRB.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		imGuiRB.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		Graphics::CommandList->ResourceBarrier(1, &imGuiRB);
+		rb.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+		rb.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		Graphics::CommandList->ResourceBarrier(1, &rb);
 
 		// Rendering
 		ImGui::Render();
@@ -220,13 +222,8 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	// Present
 	{
-		D3D12_RESOURCE_BARRIER rb = {};
-		rb.Type						= D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		rb.Flags					= D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		rb.Transition.pResource		= currentBackBuffer.Get();
 		rb.Transition.StateBefore	= D3D12_RESOURCE_STATE_RENDER_TARGET;
 		rb.Transition.StateAfter	= D3D12_RESOURCE_STATE_PRESENT;
-		rb.Transition.Subresource	= D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		Graphics::CommandList->ResourceBarrier(1, &rb);
 
 		// Must occur BEFORE present
@@ -357,7 +354,7 @@ void Game::CreateGeometry()
 	// Get how many materials have been created so we can index past them
 	int firstGeneratedMaterialIndex = (int)materials.size();
 
-	// MATERIALS & ENTITIES 3-22
+	// MATERIALS & ENTITIES 4-28
 	for (int i = 0; i < 25; i++) {
 		auto newMat = AddMaterial("Mat_Generated", pipelineState);
 		newMat->SetColorTint(XMFLOAT3(
