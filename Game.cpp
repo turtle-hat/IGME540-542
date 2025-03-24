@@ -279,24 +279,28 @@ void Game::CreateMaterials()
 	matBronze			->AddTexture(tBronzeAM, 0);
 	matBronze			->AddTexture(tBronzeNR, 1);
 	matBronze			->SetColorTint(XMFLOAT3(1.0f, 0.5f, 0.0f));
+	matBronze			->SetRoughness(0.0f);
 	matBronze			->FinalizeMaterial();
 
 	auto matCobblestone	= AddMaterial("Mat_Cobblestone", pipelineState);
 	matCobblestone		->AddTexture(tCobblestoneAM, 0);
 	matCobblestone		->AddTexture(tCobblestoneNR, 1);
 	matCobblestone		->SetColorTint(XMFLOAT3(0.1f, 0.1f, 0.1f));
+	matCobblestone		->SetRoughness(1.0f);
 	matCobblestone		->FinalizeMaterial();
 
 	auto matFloor		= AddMaterial("Mat_Floor", pipelineState);
 	matFloor			->AddTexture(tFloorAM, 0);
 	matFloor			->AddTexture(tFloorNR, 1);
 	matFloor			->SetColorTint(XMFLOAT3(0.2f, 0.3f, 0.25f));
+	matFloor			->SetRoughness(1.0f);
 	matFloor			->FinalizeMaterial();
 
 	auto matScratched	= AddMaterial("Mat_Scratched", pipelineState);
 	matScratched		->AddTexture(tScratchedAM, 0);
 	matScratched		->AddTexture(tScratchedNR, 1);
 	matScratched		->SetColorTint(XMFLOAT3(1.0f, 1.0f, 0.1f));
+	matScratched		->SetRoughness(0.5f);
 	matScratched		->FinalizeMaterial();
 }
 
@@ -362,8 +366,9 @@ void Game::CreateGeometry()
 			(float)rand() / RAND_MAX,
 			(float)rand() / RAND_MAX
 		));
+		newMat->SetRoughness((float)rand() / RAND_MAX);
 
-		AddEntity("E_Generated", 0, firstGeneratedMaterialIndex + i, XMFLOAT3(
+		AddEntity("E_Generated", 6, firstGeneratedMaterialIndex + i, XMFLOAT3(
 			(float)((i % 5) - 2) * 3,
 			-5.0f,
 			(float)((i / 5) - 2) * 3

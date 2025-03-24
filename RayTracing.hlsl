@@ -209,7 +209,10 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 	}
 
 	// Otherwise, add this entity's color to the payload and trace again
-    payload.color *= entityColor[InstanceID()].rgb;
+	float4 entityMatData = entityColor[InstanceID()];
+    payload.color *= entityMatData.rgb;
+	// Get roughness value
+	float entityRoughness = entityMatData.a;
 
 	// Get the details of the hit triangle
 	Vertex hit = InterpolateVertices(PrimitiveIndex(), hitAttributes.barycentrics);
@@ -229,8 +232,10 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 	float3 randomBounce = RandomVectorHemisphere(rand2(rng), normal_WS);
 
 	// Reflect to find direction
-	ray.Direction = randomBounce;
-	//ray.Direction = reflect(WorldRayDirection(), normal_WS);
+	float3 perfectBounce = reflect(WorldRayDirection(), normal_WS);
+
+	// Interpolate direction based on roughness
+	ray.Direction = lerp(perfectBounce, randomBounce, entityRoughness);
 
 	// Increase number of recursions and trace again
 	payload.recursionDepth++;
