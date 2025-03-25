@@ -166,9 +166,9 @@ void Game::Update(float deltaTime, float totalTime)
 		auto transform = entities[i]->GetTransform();
 		transform->Rotate(0.0f, pObjectRotationSpeed * deltaTime, 0.0f);
 
-		if (i > 3) {
+		if (i > 4) {
 			XMFLOAT3 pos = transform->GetPosition();
-			transform->SetPosition(pos.x, sinf(totalTime * 2.5f + (float)i) - 5.0f, pos.z);
+			transform->SetPosition(pos.x, sinf(totalTime * 2.5f + (float)i) - 4.0f, pos.z);
 			transform->SetScale(
 				sinf(totalTime + (float)i) * 0.5f + 1.0f,
 				sinf(totalTime + (float)i) * 0.5f + 1.0f,
@@ -274,7 +274,7 @@ void Game::CreateMaterials()
 
 	// Create Materials
 
-	// MATERIALS 0-3
+	// MATERIALS 0-4
 	auto matBronze		= AddMaterial("Mat_Bronze", pipelineState);
 	matBronze			->AddTexture(tBronzeAM, 0);
 	matBronze			->AddTexture(tBronzeNR, 1);
@@ -302,6 +302,12 @@ void Game::CreateMaterials()
 	matScratched		->SetColorTint(XMFLOAT3(1.0f, 1.0f, 0.1f));
 	matScratched		->SetRoughness(0.5f);
 	matScratched		->FinalizeMaterial();
+
+	auto matGlass = AddMaterial("Mat_Glass", pipelineState);
+	matGlass->SetColorTint(XMFLOAT3(0.0f, 0.05f, 0.9f));
+	matGlass->SetRoughness(0.125f);
+	matGlass->SetRefractiveIndex(1.52f);
+	matGlass->FinalizeMaterial();
 }
 
 // --------------------------------------------------------
@@ -347,18 +353,21 @@ void Game::CreateGeometry()
 	meshes.push_back(make_shared<Mesh>("M_Sphere",				FixPath(L"../../Assets/Models/sphere.obj").c_str()));
 	meshes.push_back(make_shared<Mesh>("M_Torus",				FixPath(L"../../Assets/Models/torus.obj").c_str()));
 
-	// ENTITIES 0-3
-	auto floor = AddEntity("E_Floor",	0,	2,	XMFLOAT3(0.0f, -110.0f, 0.0f));
+	// ENTITIES 0-4
+	auto floor = AddEntity("E_Floor",	0,	2,	XMFLOAT3(0.0f, -105.0f, 0.0f));
 	floor->GetTransform()->SetScale(100.0f, 100.0f, 100.0f);
 
-	AddEntity("E_Cube",		0,	0,	XMFLOAT3(-3.0f,	0.0f,	0.0f));
-	AddEntity("E_Helix",	2,	1,	XMFLOAT3( 0.0f,	0.0f,	0.0f));
-	AddEntity("E_Sphere",	5,	3,	XMFLOAT3( 3.0f,	0.0f,	0.0f));
+	AddEntity("E_Sphere",	5,	0,	XMFLOAT3(-3.0f,	 0.0f,	0.0f));
+	AddEntity("E_Torus",	2,	1,	XMFLOAT3( 0.0f,	 0.0f,	0.0f));
+	AddEntity("E_Cube",		0,	3,	XMFLOAT3( 3.0f,	 0.0f,	0.0f));
+
+	auto glassSphere = AddEntity("E_GlassSphere",	5,	4,	XMFLOAT3( 0.0f,	-4.0f,	0.0f));
+	glassSphere->GetTransform()->SetScale(2.0f, 2.0f, 2.0f);
 
 	// Get how many materials have been created so we can index past them
 	int firstGeneratedMaterialIndex = (int)materials.size();
 
-	// MATERIALS & ENTITIES 4-28
+	// MATERIALS & ENTITIES 5-29
 	for (int i = 0; i < 25; i++) {
 		auto newMat = AddMaterial("Mat_Generated", pipelineState);
 		newMat->SetColorTint(XMFLOAT3(
@@ -370,7 +379,7 @@ void Game::CreateGeometry()
 
 		AddEntity("E_Generated", 6, firstGeneratedMaterialIndex + i, XMFLOAT3(
 			(float)((i % 5) - 2) * 3,
-			-5.0f,
+			-4.0f,
 			(float)((i / 5) - 2) * 3
 		));
 	}

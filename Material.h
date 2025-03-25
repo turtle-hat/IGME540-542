@@ -18,6 +18,7 @@ public:
 	const char* GetName();
 	float GetRoughness();
 	float GetMetalness();
+	float GetRefractiveIndex();
 	int GetNumTextures();
 
 	// Setters
@@ -27,6 +28,7 @@ public:
 	void SetUVOffset(DirectX::XMFLOAT2 _uvOffset);
 	void SetRoughness(float _roughness);
 	void SetMetalness(float _metalness);
+	void SetRefractiveIndex(float _refractiveIndex);
 
 	// Material Management
 	void AddTexture(D3D12_CPU_DESCRIPTOR_HANDLE _srv, unsigned int _slot);
@@ -39,6 +41,7 @@ private:
 	DirectX::XMFLOAT2 uvOffset;
 	float roughness;
 	float metalness;
+	float refractiveIndex;
 
 	// Texture Data
 	bool finalized;

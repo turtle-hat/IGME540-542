@@ -10,6 +10,7 @@ Material::Material(const char* _name, Microsoft::WRL::ComPtr<ID3D12PipelineState
 	uvOffset = _uvOffset;
 	roughness = 1.0f;
 	metalness = 1.0f;
+	refractiveIndex = -1.0f;
 
 	finalized = false;
 	// -1 means the Material has no textures
@@ -58,6 +59,11 @@ float Material::GetMetalness()
 	return metalness;
 }
 
+float Material::GetRefractiveIndex()
+{
+	return refractiveIndex;
+}
+
 int Material::GetNumTextures()
 {
 	return highestTextureSlotInUse + 1;
@@ -91,6 +97,11 @@ void Material::SetRoughness(float _roughness)
 void Material::SetMetalness(float _metalness)
 {
 	metalness = _metalness;
+}
+
+void Material::SetRefractiveIndex(float _refractiveIndex)
+{
+	refractiveIndex = _refractiveIndex;
 }
 
 // Adds a texture SRV to the material to be referred to by a specific texture register

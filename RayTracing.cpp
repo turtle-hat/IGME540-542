@@ -696,8 +696,14 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<std::sh
 		auto mat = _entities[i]->GetMaterial();
 		DirectX::XMFLOAT3 c = mat->GetColorTint();
 		float roughness = mat->GetRoughness();
-		// Color includes roughness value in the alpha channel
-		entityData[meshBlasIndex].color[instDesc.InstanceID] = DirectX::XMFLOAT4(c.x, c.y, c.z, roughness);
+		float metalness = mat->GetMetalness();
+		float refractiveIndex = mat->GetRefractiveIndex();
+		// Put 
+		entityData[meshBlasIndex].albedo[instDesc.InstanceID] = DirectX::XMFLOAT3(c.x, c.y, c.z);
+		entityData[meshBlasIndex].roughness[instDesc.InstanceID] = roughness;
+		entityData[meshBlasIndex].metalness[instDesc.InstanceID] = metalness;
+		entityData[meshBlasIndex].refractiveIndex[instDesc.InstanceID] = refractiveIndex;
+		entityData[meshBlasIndex].padding[instDesc.InstanceID] = DirectX::XMFLOAT2(0.0f, 0.0f);
 
 		// On to the next instance for this mesh
 		instanceIDs[meshBlasIndex]++;
