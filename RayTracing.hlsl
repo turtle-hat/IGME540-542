@@ -227,6 +227,10 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 	// Whether the hit face is the front face
 	bool isFrontFace = dot(WorldRayDirection(), normal_WS) <= 0.0f;
 
+	// Refraction code taken from Ray Tracing in One Weekend by Peter Shirley, Trevor David Black, & Steve Hollasch
+	// https://raytracing.github.io/books/RayTracingInOneWeekend.html#dielectrics
+
+	// Get reciprocal of refractive index if hitting the front face
 	float refractiveIndex = isFrontFace ? (1.0f / matRefractiveIndex) : matRefractiveIndex;
 
 	// Multiply color; if the material is refractive and hit a back face
