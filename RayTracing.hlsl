@@ -210,16 +210,30 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 	}
 
 	// Otherwise, add this entity's color to the payload and trace again
-    payload.color *= entityAlbedo[InstanceID()].rgb;
-	// Get roughness value
-	float roughness = entityRoughMetalRefract[InstanceID()].x;
-	float metalness = entityRoughMetalRefract[InstanceID()].y;
-	float refractiveIndex = entityRoughMetalRefract[InstanceID()].z;
+
+	// Get material data
+	float3 color = entityAlbedo[InstanceID()].rgb;
+	float roughness = entityRoughMetalRefract[InstanceID()].r;
+	float metalness = entityRoughMetalRefract[InstanceID()].g;
+	float matRefractiveIndex = entityRoughMetalRefract[InstanceID()].b;
+
+	// Nonrefractive materials have a refractive index of -1
+	bool isRefractive = matRefractiveIndex > 0;
 
 	// Get the details of the hit triangle
 	Vertex hit = InterpolateVertices(PrimitiveIndex(), hitAttributes.barycentrics);
 	// Get entity's normal in world space
 	float3 normal_WS = normalize(mul(hit.normal, (float3x3)ObjectToWorld4x3()));
+	// Whether the hit face is the front face
+	bool isFrontFace = dot(WorldRayDirection(), normal_WS) <= 0.0f;
+
+	float refractiveIndex = isFrontFace ? (1.0f / matRefractiveIndex) : matRefractiveIndex;
+
+	// Multiply color; if the material is refractive and hit a back face
+	// (i.e. is exiting), set color to 1 before multiplying
+	payload.color *= saturate(
+		color + (isRefractive && !isFrontFace)
+	);
 
 	// Create a new ray
 	RayDesc ray;
@@ -233,11 +247,28 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 	float2 rng = rand2(uv * (payload.recursionDepth + 1) + payload.rayPerPixelIndex + RayTCurrent());
 	float3 randomBounce = RandomVectorHemisphere(rand2(rng), normal_WS);
 
-	// Reflect to find direction
+	// Generate a perfectly reflected ray
 	float3 perfectBounce = reflect(WorldRayDirection(), normal_WS);
 
 	// Interpolate direction based on roughness
 	ray.Direction = lerp(perfectBounce, randomBounce, roughness);
+	
+	// Do refraction calculations
+	if (isRefractive) {
+		// Generate a refracted direction, with normal randomized based on roughness
+		float3 refractNormal = lerp(normal_WS, randomBounce, roughness);
+		if (!isFrontFace) {
+			// If hitting the back face, flip the triangle's normal for refraction
+			refractNormal = -refractNormal;
+		}
+
+		float3 refractedDirection = refract(WorldRayDirection(), refractNormal, refractiveIndex);
+
+		// If angle of incidence allows refraction, set direction accordingly; otherwise, keep as the reflected direction
+		if (length(refractedDirection) > 0.0f) {
+			ray.Direction = refractedDirection;
+		}
+	}
 
 	// Increase number of recursions and trace again
 	payload.recursionDepth++;

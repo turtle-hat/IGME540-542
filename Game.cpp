@@ -304,8 +304,8 @@ void Game::CreateMaterials()
 	matScratched		->FinalizeMaterial();
 
 	auto matGlass = AddMaterial("Mat_Glass", pipelineState);
-	matGlass->SetColorTint(XMFLOAT3(0.0f, 0.05f, 0.9f));
-	matGlass->SetRoughness(0.125f);
+	matGlass->SetColorTint(XMFLOAT3(0.8f, 0.8f, 1.0f));
+	matGlass->SetRoughness(0.02f);
 	matGlass->SetRefractiveIndex(1.52f);
 	matGlass->FinalizeMaterial();
 }
@@ -361,7 +361,7 @@ void Game::CreateGeometry()
 	AddEntity("E_Helix",	2,	1,	XMFLOAT3( 0.0f,	 0.0f,	0.0f));
 	AddEntity("E_Cube",		0,	3,	XMFLOAT3( 3.0f,	 0.0f,	0.0f));
 
-	auto glassSphere = AddEntity("E_GlassSphere",	5,	4,	XMFLOAT3( 0.0f,	-4.0f,	0.0f));
+	auto glassSphere = AddEntity("E_GlassSphere",	5,	4,	XMFLOAT3( 0.0f,	4.0f,	0.0f));
 	glassSphere->GetTransform()->SetScale(2.0f, 2.0f, 2.0f);
 
 	// Get how many materials have been created so we can index past them

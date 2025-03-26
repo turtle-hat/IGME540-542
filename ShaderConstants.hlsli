@@ -7,7 +7,7 @@
 // Ensure this matches Raytracing shader define!
 #define MAX_INSTANCES_PER_BLAS 128
 #define RAYS_PER_PIXEL 5
-#define MAX_RAY_RECURSIONS 3
+#define MAX_RAY_RECURSIONS 5
 // Handy to have this as a constant
 static const float PI = 3.14159265359f;
 
