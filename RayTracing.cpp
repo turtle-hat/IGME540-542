@@ -288,6 +288,7 @@ void RayTracing::CreateRaytracingPipelineState(std::wstring raytracingShaderLibr
 
 	// === Shader config (payload) ===
 	D3D12_RAYTRACING_SHADER_CONFIG shaderConfigDesc = {};
+	// Ray payload size
 	shaderConfigDesc.MaxPayloadSizeInBytes = sizeof(DirectX::XMFLOAT3) + sizeof(unsigned int) * 2;	// Assuming a float3 color for now
 	shaderConfigDesc.MaxAttributeSizeInBytes = sizeof(DirectX::XMFLOAT2); // Assuming a float2 for barycentric coords for now
 
@@ -698,12 +699,9 @@ void RayTracing::CreateTopLevelAccelerationStructureForScene(std::vector<std::sh
 		float roughness = mat->GetRoughness();
 		float metalness = mat->GetMetalness();
 		float refractiveIndex = mat->GetRefractiveIndex();
-		// Put 
-		entityData[meshBlasIndex].albedo[instDesc.InstanceID] = DirectX::XMFLOAT3(c.x, c.y, c.z);
-		entityData[meshBlasIndex].roughness[instDesc.InstanceID] = roughness;
-		entityData[meshBlasIndex].metalness[instDesc.InstanceID] = metalness;
-		entityData[meshBlasIndex].refractiveIndex[instDesc.InstanceID] = refractiveIndex;
-		entityData[meshBlasIndex].padding[instDesc.InstanceID] = DirectX::XMFLOAT2(0.0f, 0.0f);
+		// Put all entity data into the constant buffer
+		entityData[meshBlasIndex].albedo[instDesc.InstanceID] = DirectX::XMFLOAT4(c.x, c.y, c.z, 1.0f);
+		entityData[meshBlasIndex].roughMetalRefract[instDesc.InstanceID] = DirectX::XMFLOAT4(roughness, metalness, refractiveIndex, 0.0f);
 
 		// On to the next instance for this mesh
 		instanceIDs[meshBlasIndex]++;

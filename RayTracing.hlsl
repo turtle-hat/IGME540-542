@@ -41,12 +41,8 @@ cbuffer SceneData : register(b0)
 // Ensure this matches C++ buffer struct define!
 cbuffer ObjectData : register(b1)
 {
-    float3 entityAlbedo[MAX_INSTANCES_PER_BLAS];
-	float entityMetalness[MAX_INSTANCES_PER_BLAS];
-
-	float entityRoughness[MAX_INSTANCES_PER_BLAS];
-	float entityRefractiveIndex[MAX_INSTANCES_PER_BLAS];
-	float2 entityPadding[MAX_INSTANCES_PER_BLAS];
+    float4 entityAlbedo[MAX_INSTANCES_PER_BLAS];
+	float4 entityRoughMetalRefract[MAX_INSTANCES_PER_BLAS];
 };
 
 
@@ -214,8 +210,11 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 	}
 
 	// Otherwise, add this entity's color to the payload and trace again
-    payload.color *= entityAlbedo[InstanceID()];
+    payload.color *= entityAlbedo[InstanceID()].rgb;
 	// Get roughness value
+	float roughness = entityRoughMetalRefract[InstanceID()].x;
+	float metalness = entityRoughMetalRefract[InstanceID()].y;
+	float refractiveIndex = entityRoughMetalRefract[InstanceID()].z;
 
 	// Get the details of the hit triangle
 	Vertex hit = InterpolateVertices(PrimitiveIndex(), hitAttributes.barycentrics);
@@ -238,7 +237,7 @@ void ClosestHit(inout RayPayload payload, BuiltInTriangleIntersectionAttributes 
 	float3 perfectBounce = reflect(WorldRayDirection(), normal_WS);
 
 	// Interpolate direction based on roughness
-	ray.Direction = lerp(perfectBounce, randomBounce, entityRoughness[InstanceID()]);
+	ray.Direction = lerp(perfectBounce, randomBounce, roughness);
 
 	// Increase number of recursions and trace again
 	payload.recursionDepth++;

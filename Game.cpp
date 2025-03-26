@@ -285,7 +285,7 @@ void Game::CreateMaterials()
 	auto matCobblestone	= AddMaterial("Mat_Cobblestone", pipelineState);
 	matCobblestone		->AddTexture(tCobblestoneAM, 0);
 	matCobblestone		->AddTexture(tCobblestoneNR, 1);
-	matCobblestone		->SetColorTint(XMFLOAT3(0.1f, 0.1f, 0.1f));
+	matCobblestone		->SetColorTint(XMFLOAT3(0.25f, 0.25f, 0.25f));
 	matCobblestone		->SetRoughness(1.0f);
 	matCobblestone		->FinalizeMaterial();
 
@@ -358,7 +358,7 @@ void Game::CreateGeometry()
 	floor->GetTransform()->SetScale(100.0f, 100.0f, 100.0f);
 
 	AddEntity("E_Sphere",	5,	0,	XMFLOAT3(-3.0f,	 0.0f,	0.0f));
-	AddEntity("E_Torus",	2,	1,	XMFLOAT3( 0.0f,	 0.0f,	0.0f));
+	AddEntity("E_Helix",	2,	1,	XMFLOAT3( 0.0f,	 0.0f,	0.0f));
 	AddEntity("E_Cube",		0,	3,	XMFLOAT3( 3.0f,	 0.0f,	0.0f));
 
 	auto glassSphere = AddEntity("E_GlassSphere",	5,	4,	XMFLOAT3( 0.0f,	-4.0f,	0.0f));
@@ -376,6 +376,9 @@ void Game::CreateGeometry()
 			(float)rand() / RAND_MAX
 		));
 		newMat->SetRoughness((float)rand() / RAND_MAX);
+		if ((float)rand() / RAND_MAX > 0.5f) {
+			newMat->SetRefractiveIndex(1.52f);
+		}
 
 		AddEntity("E_Generated", 6, firstGeneratedMaterialIndex + i, XMFLOAT3(
 			(float)((i % 5) - 2) * 3,
@@ -701,6 +704,7 @@ void Game::ImGuiBuildInterface()
 				float tint_f[3] = { tint_xm.x, tint_xm.y, tint_xm.z };
 				float roughness = materials[i]->GetRoughness();
 				float metalness = materials[i]->GetMetalness();
+				float refractiveIndex = materials[i]->GetRefractiveIndex();
 				XMFLOAT2 uv_pos = materials[i]->GetUVOffset();
 				XMFLOAT2 uv_sca = materials[i]->GetUVScale();
 
@@ -712,10 +716,15 @@ void Game::ImGuiBuildInterface()
 				if (ImGui::SliderFloat("Roughness", &roughness, 0.0f, 1.0f, "%.2f")) {
 					materials[i]->SetRoughness(roughness);
 				}
-				// If the user has edited the material's metalness this frame, change the material's metalness
+				// Ditto
 				if (ImGui::SliderFloat("Metalness", &metalness, 0.0f, 1.0f, "%.2f")) {
 					materials[i]->SetMetalness(metalness);
 				}
+				// Ditto
+				if (ImGui::SliderFloat("Refractive Index", &refractiveIndex, -1.0f, 3.0f, "%.2f")) {
+					materials[i]->SetRefractiveIndex(refractiveIndex);
+				}
+				ImGui::SetItemTooltip("Refractive indices below 0 cause material to not refract.\nSetting between 0 and 1 may cause unpredictable results.");
 				if (ImGui::DragFloat2("UV Offset", (float*)&uv_pos, 0.01f, NULL, NULL, "%.2f")) {
 					materials[i]->SetUVOffset(uv_pos);
 				}

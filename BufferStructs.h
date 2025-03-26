@@ -13,10 +13,8 @@ struct RaytracingSceneData
 // Ensure this matches Raytracing shader define!
 struct RaytracingEntityData
 {
-	DirectX::XMFLOAT3 albedo[MAX_INSTANCES_PER_BLAS];
-	float metalness[MAX_INSTANCES_PER_BLAS];
-
-	float roughness[MAX_INSTANCES_PER_BLAS];
-	float refractiveIndex[MAX_INSTANCES_PER_BLAS];
-	DirectX::XMFLOAT2 padding[MAX_INSTANCES_PER_BLAS];
+	DirectX::XMFLOAT4 albedo[MAX_INSTANCES_PER_BLAS];
+	// Stored together in a float4 to ensure alignment with byte boundaries
+	// x = roughness, y = metalness, z = refractive index, w = 1.0f;
+	DirectX::XMFLOAT4 roughMetalRefract[MAX_INSTANCES_PER_BLAS];
 };

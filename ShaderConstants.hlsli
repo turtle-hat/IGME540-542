@@ -5,7 +5,7 @@
 #define MAX_SPECULAR_EXPONENT 256.0f
 
 // Ensure this matches Raytracing shader define!
-#define MAX_INSTANCES_PER_BLAS 100
+#define MAX_INSTANCES_PER_BLAS 128
 #define RAYS_PER_PIXEL 5
 #define MAX_RAY_RECURSIONS 3
 // Handy to have this as a constant
