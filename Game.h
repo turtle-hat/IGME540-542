@@ -80,6 +80,9 @@ private:
 	// ENTITIES
 	std::vector<std::shared_ptr<Entity>> entities;
 
+	// PARTICLES
+
+
 	// IMGUI
 	bool igShowDemo;
 
