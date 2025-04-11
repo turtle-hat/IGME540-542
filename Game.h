@@ -9,6 +9,7 @@
 #include "Lights.h"
 #include "Material.h"
 #include "Mesh.h"
+#include "ParticleEmitter.h"
 
 class Game
 {
@@ -47,6 +48,8 @@ private:
 	Light AddLightDirectional(DirectX::XMFLOAT3 _direction, DirectX::XMFLOAT3 _color, float _intensity, bool _isActive);
 	Light AddLightPoint(DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _color, float _intensity, float _range, bool _isActive);
 	Light AddLightSpot(DirectX::XMFLOAT3 _position, DirectX::XMFLOAT3 _direction, DirectX::XMFLOAT3 _color, float _intensity, float _range, float _innerAngle, float _outerAngle, bool _isActive);
+	void CreateParticleRootSigAndPipelineState();
+	void CreateParticleEmitters();
 	void ImGuiInitialize();
 	void ImGuiUpdate(float _deltaTime);
 	void ImGuiBuildInterface();
@@ -81,6 +84,9 @@ private:
 	std::vector<std::shared_ptr<Entity>> entities;
 
 	// PARTICLES
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> particleRootSignature;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> particlePipelineState;
+	std::vector<std::shared_ptr<ParticleEmitter>> emitters;
 
 
 	// IMGUI
