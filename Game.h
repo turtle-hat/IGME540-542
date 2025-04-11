@@ -12,6 +12,7 @@
 #include "Lights.h"
 #include "Camera.h"
 #include "Skybox.h"
+#include "ParticleEmitter.h"
 #include "SimpleShader.h"
 
 class Game
@@ -168,6 +169,13 @@ private:
 	// Ambient light colors for each skybox
 	std::vector<DirectX::XMFLOAT3> skyboxAmbientColors;
 	int pSkyboxCurrent;
+
+	// PARTICLES
+	std::vector<std::shared_ptr<ParticleEmitter>> particleEmitters;
+	// Shaders
+	std::shared_ptr<SimpleVertexShader> vsParticle;
+	std::shared_ptr<SimplePixelShader> psParticle;
+
 
 	// SHADOWS
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowDSV;

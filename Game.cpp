@@ -148,6 +148,13 @@ void Game::CreateMaterials()
 	AddTexture(L"../../Assets/Textures/T_scratched_NR.png");
 	AddTexture(L"../../Assets/Textures/T_wood_AM.png");
 	AddTexture(L"../../Assets/Textures/T_wood_NR.png");
+	AddTexture(L"../../Assets/Textures/Particles/circle_05.png");
+	AddTexture(L"../../Assets/Textures/Particles/flame_animated.png");
+	AddTexture(L"../../Assets/Textures/Particles/spark_01.png");
+	AddTexture(L"../../Assets/Textures/Particles/spark_02.png");
+	AddTexture(L"../../Assets/Textures/Particles/spark_03.png");
+	AddTexture(L"../../Assets/Textures/Particles/spark_04.png");
+	AddTexture(L"../../Assets/Textures/Particles/z_Pepper.png");
 
 
 	// Set default sampler state settings
@@ -639,7 +646,7 @@ void Game::InitializeSimulationParameters() {
 	ppBlurRun = false;
 	ppBlurRadius = 5;
 
-	ppDitherRun = true;
+	ppDitherRun = false;
 	ppDitherMapTextureID = 3;
 	ppDitherPixelSize = 2;
 	ppDitherBias = -0.25f;
