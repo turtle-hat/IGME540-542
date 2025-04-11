@@ -283,6 +283,11 @@ void Game::CreateSkyboxes() {
 	AddSkybox("SB_Planet", L"../../Assets/Textures/Cubemaps/Planet/CM_Planet", XMFLOAT3(0.0f, 0.0f, 0.025f));
 }
 
+void Game::CreateParticleEmitters()
+{
+
+}
+
 // --------------------------------------------------------
 // Handle resizing to match the new window size
 //  - Eventually, we'll want to update our 3D camera

@@ -38,6 +38,7 @@ private:
 	void CreateLights();
 	void CreateCameras();
 	void CreateSkyboxes();
+	void CreateParticleEmitters();
 	void InitializeSimulationParameters();
 	void AddVertexShader(const wchar_t* _path, std::shared_ptr<SimpleVertexShader>& _shader);
 	void AddPixelShader(const wchar_t* _path, std::shared_ptr<SimplePixelShader>& _shader);
