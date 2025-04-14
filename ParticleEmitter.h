@@ -5,12 +5,13 @@
 #include <memory>
 
 #include "Particle.h"
-#include "SimpleShader.h"
+#include "Material.h"
+#include "Transform.h"
 
 struct ParticleEmitterParams {
 	float emitFrequency;
 	float particleLifetime;
-	DirectX::XMFLOAT3 startPosition;
+	DirectX::XMFLOAT3 startPositionOffset;
 	DirectX::XMFLOAT3 startPositionVariance;
 	DirectX::XMFLOAT3 startVelocity;
 	DirectX::XMFLOAT3 startVelocityVariance;
@@ -24,7 +25,7 @@ struct ParticleEmitterParams {
 class ParticleEmitter
 {
 public:
-	ParticleEmitter(const char* _name, std::shared_ptr<SimpleVertexShader> _vertexShader, std::shared_ptr<SimplePixelShader> _pixelShader, ParticleEmitterParams _params, int _particleCount);
+	ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, std::shared_ptr<Transform> _transform, ParticleEmitterParams _params, int _particleCount);
 	~ParticleEmitter();
 	void Update(float _deltaTime, float _totalTime);
 	void Draw();
@@ -35,20 +36,15 @@ public:
 	unsigned int GetParticleCount();
 	void SetParticleCount(unsigned int _particleCount);
 
-	const char* GetName();
+	std::shared_ptr<Material> GetMaterial();
+	void SetMaterial(std::shared_ptr<Material> _material);
 
-	// Texture Management
-	void SetVertexShader(std::shared_ptr<SimpleVertexShader> _vertexShader);
-	void SetPixelShader(std::shared_ptr<SimplePixelShader> _pixelShader);
-	void LockSamplerState();
-	void UnlockSamplerState();
-	void AddTextureSRV(std::string _name, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> _srv);
-	void AddSampler(std::string _name, Microsoft::WRL::ComPtr<ID3D11SamplerState> _sampler);
-	void PrepareTextures();
+	std::shared_ptr<Transform> GetTransform();
+
+	const char* GetName();
 
 private:
 	void EmitParticle(float _totalTime);
-	void RebuildTextureList();
 	void RebuildDataBuffers();
 
 	Particle* particles;
@@ -60,12 +56,13 @@ private:
 	int firstDead;
 	// The number of particles in this emitter that are alive
 	int aliveCount;
+	// Tracks when the last particle was emitted
+	float lastEmitTimer;
+	// 
+	float emitPeriod;
 
-	// PARAMETERS
 	// Bundles emitter-specific parameters into a single structure for ease of creation
 	ParticleEmitterParams params;
-	float emitPeriod;
-	float lastEmitTimer;
 
 	// Name for UI
 	const char* name;
@@ -74,16 +71,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleDataSRV;
 
-	// Shaders
-	std::shared_ptr<SimpleVertexShader> vertexShader;
-	std::shared_ptr<SimplePixelShader> pixelShader;
-	
-	// Texture Management
-	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textureSRVs;
-	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11SamplerState>> samplers;
-	// Returned with GetTextures so it doesn't have to be rebuilt each time
-	std::vector<ID3D11ShaderResourceView*> textureList;
-	// Locks the sampler state so it isn't affected by changes to the global sampler state
-	bool isSamplerStateLocked;
+	// Transform for positional information and material for 
+	// Only parts of their functionality is used
+	std::shared_ptr<Transform> transform;
+	std::shared_ptr<Material> material;
 };
 

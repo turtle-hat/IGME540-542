@@ -148,6 +148,7 @@ void Game::CreateMaterials()
 	AddTexture(L"../../Assets/Textures/T_scratched_NR.png");
 	AddTexture(L"../../Assets/Textures/T_wood_AM.png");
 	AddTexture(L"../../Assets/Textures/T_wood_NR.png");
+	// TEXTURES 14-20
 	AddTexture(L"../../Assets/Textures/Particles/circle_05.png");
 	AddTexture(L"../../Assets/Textures/Particles/flame_animated.png");
 	AddTexture(L"../../Assets/Textures/Particles/spark_01.png");
@@ -206,6 +207,10 @@ void Game::CreateMaterials()
 	materials[9]->AddTextureSRV("MapNormalRoughness", textures[13]);
 	materials[9]->AddSampler("BasicSampler", samplerState);
 	materials[9]->SetUVScale(XMFLOAT2(3.0f, 3.0f));
+
+	// MATERIALS 10-12
+	AddMaterial("Mat_Pepper_Emitter",		vsParticle, psParticle, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	materials[10]->AddTextureSRV("ParticleTexture", textures[20]);
 }
 
 // --------------------------------------------------------
@@ -1046,7 +1051,7 @@ void Game::RebuildShadowMap()
 		shadowSRV.GetAddressOf());
 
 	// Add shadow map texture to materials that need it
-	for (int i = 3; i < materials.size(); i++) {
+	for (int i = 3; i < 10; i++) {
 		materials[i]->AddTextureSRV("MapShadow", shadowSRV);
 	}
 }
