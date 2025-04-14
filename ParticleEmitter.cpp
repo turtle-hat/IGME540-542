@@ -1,5 +1,7 @@
 #include "ParticleEmitter.h"
 
+#include "Graphics.h"
+
 ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<SimpleVertexShader> _vertexShader, std::shared_ptr<SimplePixelShader> _pixelShader, ParticleEmitterParams _params, int _particleCount)
 {
 	params = _params;
@@ -14,6 +16,8 @@ ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<SimpleVertex
 	lastEmitTimer = -1;
 
 	name = _name;
+
+	RebuildDataBuffers();
 }
 
 ParticleEmitter::~ParticleEmitter()
@@ -24,10 +28,28 @@ ParticleEmitter::~ParticleEmitter()
 
 void ParticleEmitter::Update(float _deltaTime, float _totalTime)
 {
+	lastEmitTimer += _deltaTime;
+	while (lastEmitTimer > params.emitFrequency)
+	{
+		EmitParticle(_totalTime);
+		lastEmitTimer -= params.emitFrequency;
+	}
+
+
 }
 
 void ParticleEmitter::Draw()
 {
+	// Map the buffer, locking it on the GPU so we can write to it
+	D3D11_MAPPED_SUBRESOURCE mapped = {};
+
+	Graphics::Context->Map(particleDataBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+
+	// Copy
+	memcpy(mapped.pData, particles, sizeof(Particle) * particleCount);
+
+	// Unmap (unlock) now that we're done with it
+	context->Unmap(particleDataBuffer.Get(), 0);
 }
 
 ParticleEmitterParams ParticleEmitter::GetParams()
@@ -45,10 +67,19 @@ unsigned int ParticleEmitter::GetParticleCount()
 	return particleCount;
 }
 
+/// <summary>
+/// Sets the number of Particles this Emitter can track.
+/// Destroys existing Particles and recreates the buffer that stores them
+/// </summary>
+/// <param name="_particleCount">New maximum number of particles this Emitter can track</param>
 void ParticleEmitter::SetParticleCount(unsigned int _particleCount)
 {
+	// Recreate Particle array
 	delete[] particles;
 	particles = new Particle[particleCount];
+
+	// Release and 
+	RebuildDataBuffers();
 }
 
 const char* ParticleEmitter::GetName()
@@ -110,6 +141,11 @@ void ParticleEmitter::PrepareTextures()
 	}
 }
 
+void ParticleEmitter::EmitParticle(float _totalTime)
+{
+
+}
+
 void ParticleEmitter::RebuildTextureList()
 {
 	// If textures have been removed or updated, rebuild textureList
@@ -118,5 +154,31 @@ void ParticleEmitter::RebuildTextureList()
 	for (auto srv : textureSRVs) {
 		textureList.push_back(srv.second.Get());
 	}
+}
+
+/// <summary>
+/// Recreates references to 
+/// </summary>
+void ParticleEmitter::RebuildDataBuffers()
+{
+	// Make a dynamic buffer to hold all particle data on GPU
+	// Note: We'll be overwriting this every frame with new lifetime data
+	D3D11_BUFFER_DESC desc = {};
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	desc.Usage = D3D11_USAGE_DYNAMIC;						// Dynamic buffer, allows read/write
+	desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;	// Structured buffer, stores particle structs
+	desc.StructureByteStride = sizeof(Particle);
+	desc.ByteWidth = sizeof(Particle) * particleCount;
+	Graphics::Device->CreateBuffer(&desc, 0, particleDataBuffer.ReleaseAndGetAddressOf());
+
+	// Create an SRV that points to a structured buffer of particles
+	// so we can grab this data in a vertex shader
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	srvDesc.Buffer.FirstElement = 0;
+	srvDesc.Buffer.NumElements = particleCount;
+	Graphics::Device->CreateShaderResourceView(particleDataBuffer.Get(), &srvDesc, particleDataSRV.ReleaseAndGetAddressOf());
 }
 

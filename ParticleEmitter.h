@@ -47,7 +47,9 @@ public:
 	void PrepareTextures();
 
 private:
+	void EmitParticle(float _totalTime);
 	void RebuildTextureList();
+	void RebuildDataBuffers();
 
 	Particle* particles;
 	// Total number of particles this emitter tracks
@@ -59,6 +61,7 @@ private:
 	// The number of particles in this emitter that are alive
 	int aliveCount;
 
+	// PARAMETERS
 	// Bundles emitter-specific parameters into a single structure for ease of creation
 	ParticleEmitterParams params;
 	float emitPeriod;
@@ -66,6 +69,10 @@ private:
 
 	// Name for UI
 	const char* name;
+
+	// GPU buffer references
+	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleDataSRV;
 
 	// Shaders
 	std::shared_ptr<SimpleVertexShader> vertexShader;

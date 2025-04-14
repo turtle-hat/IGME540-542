@@ -441,8 +441,6 @@ void Game::Draw(float deltaTime, float totalTime)
 	}
 
 	Graphics::Context->RSSetState(0);
-	
-
 
 	// RENDER OBJECTS
 	// Loop through every entity and draw it
@@ -507,6 +505,10 @@ void Game::Draw(float deltaTime, float totalTime)
 	// Draw the selected skybox
 	skyboxes[pSkyboxCurrent]->Draw(cameras[pCameraCurrent]);
 
+	// PARTICLES
+	{
+
+	}
 
 	// POST-PROCESS
 	// Blur
@@ -569,6 +571,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Draw
 		Graphics::Context->Draw(3, 0);
 	}
+
 
 
 	// RENDER IMGUI

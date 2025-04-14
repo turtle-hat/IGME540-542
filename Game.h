@@ -175,6 +175,9 @@ private:
 	// Shaders
 	std::shared_ptr<SimpleVertexShader> vsParticle;
 	std::shared_ptr<SimplePixelShader> psParticle;
+	// Pipeline State
+	std::shared_ptr<ID3D11DepthStencilState> particleDepthStencilState;
+	std::shared_ptr<ID3D11BlendState> particleBlendState;
 
 
 	// SHADOWS
