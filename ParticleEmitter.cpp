@@ -1,8 +1,11 @@
 #include "ParticleEmitter.h"
 
+#include <algorithm>
 #include "Graphics.h"
 
 using namespace DirectX;
+
+// Heavily based on code written by Professor Chris Cascioli
 
 // Helper macro for getting a float within a random range centered around 0
 #define RandomRange(width) ((float)rand() / RAND_MAX * width - (width / 2.0f))
@@ -65,8 +68,31 @@ void ParticleEmitter::Draw()
 
 	Graphics::Context->Map(particleDataBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 
-	// Copy
-	memcpy(mapped.pData, particles, sizeof(Particle) * particleCount);
+	// Copy only living particles
+	// Written by Professor Chris Cascioli
+
+	// How are living particles arranged in the buffer?
+	if (firstAlive < firstDead)
+	{
+		// Only copy from FirstAlive -> FirstDead
+		memcpy(
+			mapped.pData,					// Destination = start of particle buffer
+			particles + firstAlive,			// Source = particle array, offset to first living particle
+			sizeof(Particle) * aliveCount);	// Amount = number of particles (measured in BYTES!)
+	}
+	else
+	{
+		// Copy from 0 -> FirstDead
+		memcpy(
+			mapped.pData,					// Destination = start of particle buffer
+			particles,						// Source = start of particle array
+			sizeof(Particle) * firstDead);	// Amount = particles up to first dead (measured in BYTES!)
+		// ALSO copy from FirstAlive -> End
+		memcpy(
+			(void*)((Particle*)mapped.pData + firstDead),		// Destination = particle buffer, AFTER the data we copied in previous memcpy()
+			particles + firstAlive,								// Source = particle array, offset to first living particle
+			sizeof(Particle) * (particleCount - firstAlive));	// Amount = number of living particles at end of array (measured in BYTES!)
+	}
 
 	// Unmap (unlock) now that we're done with it
 	Graphics::Context->Unmap(particleDataBuffer.Get(), 0);
@@ -174,17 +200,17 @@ void ParticleEmitter::EmitParticle(float _totalTime)
 	);
 
 	particles[firstDead].startColor = XMFLOAT4(
-		params.startColor.x + RandomRange(params.startColorVariance.x),
-		params.startColor.y + RandomRange(params.startColorVariance.y),
-		params.startColor.z + RandomRange(params.startColorVariance.z),
-		params.startColor.w + RandomRange(params.startColorVariance.w)
+		std::clamp(params.startColor.x + RandomRange(params.startColorVariance.x), 0.0f, 1.0f),
+		std::clamp(params.startColor.y + RandomRange(params.startColorVariance.y), 0.0f, 1.0f),
+		std::clamp(params.startColor.z + RandomRange(params.startColorVariance.z), 0.0f, 1.0f),
+		std::clamp(params.startColor.w + RandomRange(params.startColorVariance.w), 0.0f, 1.0f)
 	);
 
 	particles[firstDead].finalColor = XMFLOAT4(
-		params.finalColor.x + RandomRange(params.finalColorVariance.x),
-		params.finalColor.y + RandomRange(params.finalColorVariance.y),
-		params.finalColor.z + RandomRange(params.finalColorVariance.z),
-		params.finalColor.w + RandomRange(params.finalColorVariance.w)
+		std::clamp(params.finalColor.x + RandomRange(params.finalColorVariance.x), 0.0f, 1.0f),
+		std::clamp(params.finalColor.y + RandomRange(params.finalColorVariance.y), 0.0f, 1.0f),
+		std::clamp(params.finalColor.z + RandomRange(params.finalColorVariance.z), 0.0f, 1.0f),
+		std::clamp(params.finalColor.w + RandomRange(params.finalColorVariance.w), 0.0f, 1.0f)
 	);
 
 	// Recognize this particle as now alive

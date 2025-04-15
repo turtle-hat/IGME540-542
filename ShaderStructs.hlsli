@@ -79,7 +79,16 @@ struct VertexToPixel_PostProcess
     float2 uv       : TEXCOORD0; // UV coordinate
 };
 
-// Light structs
+
+// For particle shaders
+struct VertexToPixel_Particle
+{
+    float4 screenPosition   : SV_POSITION; // XYZW position (System Value Position)
+    float2 uv               : TEXCOORD0; // UV coordinate
+    float4 colorTint        : COLOR; // Color tint
+};
+
+// Lights
 
 // From C++
 #define LIGHT_TYPE_DIRECTIONAL	0
@@ -99,6 +108,20 @@ struct Light
     int Active;
     float Padding;
 };  
+
+// Particles
+
+struct Particle
+{
+    float EmitTime;
+    float3 StartPosition;
+    
+    float4 StartColor;
+    float4 FinalColor;
+    
+    float3 StartVelocity;
+    float Padding;
+};
 
 // For HLSL
 #define MAX_SPECULAR_EXPONENT 256.0f

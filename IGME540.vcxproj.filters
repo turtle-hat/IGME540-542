@@ -46,6 +46,12 @@
     <FxCompile Include="PS_PostProcess_Dither.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="PS_Particle.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="VS_Particle.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp">
