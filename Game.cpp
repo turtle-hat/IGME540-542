@@ -297,7 +297,14 @@ void Game::CreateSkyboxes() {
 
 void Game::CreateParticleEmitters()
 {
+	ParticleEmitterParams peParamsPepper = {};
+	peParamsPepper.emitFrequency			= 20.0f;
+	peParamsPepper.lifetime					= 2.0f;
+	peParamsPepper.startPositionVariance	= XMFLOAT3(2.0f, 1.0f, 2.0f);
 
+	particleEmitters.push_back(make_shared<ParticleEmitter>(
+		"PE_Pepper", materials[10], peParamsPepper, 50
+	));
 }
 
 // --------------------------------------------------------

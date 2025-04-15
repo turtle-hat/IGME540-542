@@ -2,19 +2,36 @@
 
 #include "Graphics.h"
 
-ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, std::shared_ptr<Transform> _transform, ParticleEmitterParams _params, int _particleCount)
+using namespace DirectX;
+
+// Helper macro for getting a float within a random range centered around 0
+#define RandomRange(width) ((float)rand() / RAND_MAX * width - (width / 2.0f))
+
+ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, ParticleEmitterParams _params, int _particleCount, std::shared_ptr<Transform> _transform)
 {
 	params = _params;
+	// Sets particle count, builds particle array, and builds data buffers
 	SetParticleCount(_particleCount);
 	emitPeriod = 1.0f / params.emitFrequency;
-	lastEmitTimer = 0.0f;
 
 	material = _material;
 	transform = _transform;
 
 	name = _name;
+}
 
-	RebuildDataBuffers();
+ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, ParticleEmitterParams _params, int _particleCount)
+{
+	params = _params;
+	// Sets particle count, builds particle array, and builds data buffers
+	SetParticleCount(_particleCount);
+	emitPeriod = 1.0f / params.emitFrequency;
+	lastEmitTimer = 0.0f;
+
+	material = _material;
+	transform = std::make_shared<Transform>();
+
+	name = _name;
 }
 
 ParticleEmitter::~ParticleEmitter()
@@ -28,8 +45,10 @@ void ParticleEmitter::Update(float _deltaTime, float _totalTime)
 	// Add to timer
 	lastEmitTimer += _deltaTime;
 	
-	// Kill Particles that have surpassed their lifetime
+	// Update each individual living particle
+	for (int i = firstAlive; i < aliveCount; i++) {
 
+	}
 
 	// Create as many Particles as the timeframe would allow
 	while (lastEmitTimer > emitPeriod)
@@ -76,10 +95,11 @@ unsigned int ParticleEmitter::GetParticleCount()
 void ParticleEmitter::SetParticleCount(unsigned int _particleCount)
 {
 	// Set emitter data trackers to initial values
-	firstAlive = -1;
-	firstDead = -1;
+	firstAlive = 0;
+	firstDead = 0;
 	aliveCount = 0;
-	particleCount = _particleCount;
+	lastEmitTimer = 0.0f;
+	particleCount = max(1, _particleCount);
 
 	// Discard old Particle array if necessary
 	if (particles) {
@@ -87,9 +107,11 @@ void ParticleEmitter::SetParticleCount(unsigned int _particleCount)
 	}
 	// Create Particle array
 	particles = new Particle[particleCount];
+	// Resets memory of particle array to 0
+	ZeroMemory(particles, sizeof(Particle) * particleCount);
 	aliveCount = 0;
 
-	// Release and 
+	// Release and recreate data buffers
 	RebuildDataBuffers();
 }
 
@@ -113,6 +135,17 @@ const char* ParticleEmitter::GetName()
 	return name;
 }
 
+void ParticleEmitter::UpdateParticle(float _totalTime, int index)
+{
+	// If this particle has surpassed its lifetime, kill it
+	if (_totalTime - particles[index].emitTime >= params.lifetime) {
+		aliveCount--;
+
+		firstAlive++;
+		firstAlive %= particleCount;
+	}
+}
+
 void ParticleEmitter::EmitParticle(float _totalTime)
 {
 	// Do not emit if there's already the maximum number of particles
@@ -120,7 +153,43 @@ void ParticleEmitter::EmitParticle(float _totalTime)
 		return;
 	}
 
+	// Recognize another particle as alive
 	aliveCount++;
+
+	XMFLOAT3 emitterPosition = transform->GetPosition();
+
+	particles[firstDead].emitTime = _totalTime;
+
+	// Set 
+	particles[firstDead].startPosition = XMFLOAT3(
+		emitterPosition.x + params.startPositionOffset.x + RandomRange(params.startPositionVariance.x),
+		emitterPosition.y + params.startPositionOffset.y + RandomRange(params.startPositionVariance.y),
+		emitterPosition.z + params.startPositionOffset.z + RandomRange(params.startPositionVariance.z)
+	);
+
+	particles[firstDead].startVelocity = XMFLOAT3(
+		params.startVelocity.x + RandomRange(params.startVelocityVariance.x),
+		params.startVelocity.y + RandomRange(params.startVelocityVariance.y),
+		params.startVelocity.z + RandomRange(params.startVelocityVariance.z)
+	);
+
+	particles[firstDead].startColor = XMFLOAT4(
+		params.startColor.x + RandomRange(params.startColorVariance.x),
+		params.startColor.y + RandomRange(params.startColorVariance.y),
+		params.startColor.z + RandomRange(params.startColorVariance.z),
+		params.startColor.w + RandomRange(params.startColorVariance.w)
+	);
+
+	particles[firstDead].finalColor = XMFLOAT4(
+		params.finalColor.x + RandomRange(params.finalColorVariance.x),
+		params.finalColor.y + RandomRange(params.finalColorVariance.y),
+		params.finalColor.z + RandomRange(params.finalColorVariance.z),
+		params.finalColor.w + RandomRange(params.finalColorVariance.w)
+	);
+
+	// Recognize this particle as now alive
+	firstDead++;
+	firstDead %= particleCount;
 }
 
 /// <summary>

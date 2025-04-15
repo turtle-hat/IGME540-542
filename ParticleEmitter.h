@@ -10,22 +10,23 @@
 
 struct ParticleEmitterParams {
 	float emitFrequency;
-	float particleLifetime;
+	float lifetime;
+	DirectX::XMFLOAT3 acceleration;
 	DirectX::XMFLOAT3 startPositionOffset;
 	DirectX::XMFLOAT3 startPositionVariance;
 	DirectX::XMFLOAT3 startVelocity;
 	DirectX::XMFLOAT3 startVelocityVariance;
-	DirectX::XMFLOAT3 startColor;
-	DirectX::XMFLOAT3 startColorVariance;
-	DirectX::XMFLOAT3 finalColor;
-	DirectX::XMFLOAT3 finalColorVariance;
-	DirectX::XMFLOAT3 acceleration;
+	DirectX::XMFLOAT4 startColor;
+	DirectX::XMFLOAT4 startColorVariance;
+	DirectX::XMFLOAT4 finalColor;
+	DirectX::XMFLOAT4 finalColorVariance;
 };
 
 class ParticleEmitter
 {
 public:
-	ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, std::shared_ptr<Transform> _transform, ParticleEmitterParams _params, int _particleCount);
+	ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, ParticleEmitterParams _params, int _particleCount, std::shared_ptr<Transform> _transform);
+	ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, ParticleEmitterParams _params, int _particleCount);
 	~ParticleEmitter();
 	void Update(float _deltaTime, float _totalTime);
 	void Draw();
@@ -44,6 +45,7 @@ public:
 	const char* GetName();
 
 private:
+	void UpdateParticle(float _totalTime, int index);
 	void EmitParticle(float _totalTime);
 	void RebuildDataBuffers();
 

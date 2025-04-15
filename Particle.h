@@ -5,6 +5,6 @@ struct Particle {
 	float emitTime;
 	DirectX::XMFLOAT3 startPosition;
 	DirectX::XMFLOAT3 startVelocity;
-	DirectX::XMFLOAT3 startColor;
-	DirectX::XMFLOAT3 finalColor;
+	DirectX::XMFLOAT4 startColor;
+	DirectX::XMFLOAT4 finalColor;
 };
