@@ -51,12 +51,16 @@ void ParticleEmitter::Update(float _deltaTime, float _totalTime)
 	// Add to timer
 	lastEmitTimer += _deltaTime;
 
-	int startAliveCount = aliveCount;
-	int startFirstAlive = firstAlive;
+	// Update Particles
+	if (aliveCount > 0) {
+		// Get instantaneous values (since they'll change as we iterate)
+		int startAliveCount = aliveCount;
+		int startFirstAlive = firstAlive;
 
-	// Update each individual living particle
-	for (int i = 0; i < startAliveCount; i++) {
-		UpdateParticle(_totalTime, (startFirstAlive + i) % (int)particleCount);
+		// Update each individual living particle
+		for (int i = 0; i < startAliveCount; i++) {
+			UpdateParticle(_totalTime, (startFirstAlive + i) % (int)particleCount);
+		}
 	}
 
 	// Create as many Particles as the timeframe would allow
@@ -70,6 +74,7 @@ void ParticleEmitter::Update(float _deltaTime, float _totalTime)
 void ParticleEmitter::Draw(std::shared_ptr<Camera> _camera, float _totalTime)
 {
 	// Copy Particles to the GPU
+	// Written by Professor Chris Cascioli
 
 	// Map the buffer, locking it on the GPU so we can write to it
 	D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -77,7 +82,6 @@ void ParticleEmitter::Draw(std::shared_ptr<Camera> _camera, float _totalTime)
 	Graphics::Context->Map(particleDataBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 
 	// Copy only living particles
-	// Written by Professor Chris Cascioli
 
 	// How are living particles arranged in the buffer?
 	if (firstAlive < firstDead)
@@ -133,15 +137,16 @@ void ParticleEmitter::Draw(std::shared_ptr<Camera> _camera, float _totalTime)
 	vs->SetFloat3("acceleration", params.acceleration);
 	vs->SetFloat("totalTime", _totalTime);
 	vs->SetFloat3("padding", XMFLOAT3(0.0f, 0.0f, 0.0f));
+	vs->SetShaderResourceView("ParticleData", particleDataSRV);
 	// PIXEL
 	// None yet
 
 	// COPY DATA TO CONSTANT BUFFERS
 	vs->CopyAllBufferData();
-	ps->CopyAllBufferData();
+	//ps->CopyAllBufferData();
 
 	Graphics::Context->DrawIndexed(
-		particleCount * 6,	// The number of indices to use (we could draw a subset if we wanted)
+		aliveCount * 6,		// The number of indices to use (we could draw a subset if we wanted)
 		0,					// Offset to the first index we want to use
 		0);					// Offset to add to each index when looking up vertices
 }

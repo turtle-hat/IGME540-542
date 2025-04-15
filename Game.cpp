@@ -218,7 +218,7 @@ void Game::CreateMaterials()
 
 	// MATERIALS 10-12
 	AddMaterial("Mat_Pepper_Emitter",		vsParticle, psParticle, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
-	materials[10]->AddTextureSRV("ParticleTexture", textures[16]);
+	materials[10]->AddTextureSRV("ParticleTexture", textures[20]);
 	materials[10]->AddSampler("BasicSampler", samplerState);
 }
 

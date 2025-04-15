@@ -8,8 +8,8 @@ float4 main(VertexToPixel_Particle input) : SV_TARGET
 {
     // Sample texture
     float4 sampleTexture = ParticleTexture.Sample(BasicSampler, input.uv);
-	
+    
     // Tint texture sample by RGB of color tint,
     // then multiply all channels by the color tint alpha channel for opacity with additive blending
-    return sampleTexture;
+    return sampleTexture * input.colorTint;
 }
