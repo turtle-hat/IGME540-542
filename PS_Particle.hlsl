@@ -11,5 +11,5 @@ float4 main(VertexToPixel_Particle input) : SV_TARGET
     
     // Tint texture sample by RGB of color tint,
     // then multiply all channels by the color tint alpha channel for opacity with additive blending
-    return sampleTexture * input.colorTint;
+    return sampleTexture * float4(input.colorTint.rgb, 1.0f) * input.colorTint.a;
 }

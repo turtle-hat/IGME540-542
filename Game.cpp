@@ -131,8 +131,12 @@ void Game::LoadShaders()
 
 
 	// PARTICLE SHADERS
-	AddVertexShader(L"VS_Particle.cso",	vsParticle);
-	AddPixelShader(L"PS_Particle.cso",	psParticle);
+
+	// VERTEX SHADER
+	AddVertexShader(L"VS_Particle.cso",				vsParticle);
+
+	// PIXEL SHADERS
+	AddPixelShader(L"PS_Particle.cso",			psParticle);
 }
 
 // --------------------------------------------------------
@@ -220,6 +224,14 @@ void Game::CreateMaterials()
 	AddMaterial("Mat_Pepper_Emitter",		vsParticle, psParticle, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	materials[10]->AddTextureSRV("ParticleTexture", textures[20]);
 	materials[10]->AddSampler("BasicSampler", samplerState);
+
+	AddMaterial("Mat_Sparks_Emitter", vsParticle, psParticle, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	materials[11]->AddTextureSRV("ParticleTexture", textures[16]);
+	materials[11]->AddSampler("BasicSampler", samplerState);
+
+	AddMaterial("Mat_Dots_Emitter", vsParticle, psParticle, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	materials[12]->AddTextureSRV("ParticleTexture", textures[14]);
+	materials[12]->AddSampler("BasicSampler", samplerState);
 }
 
 // --------------------------------------------------------
@@ -306,18 +318,48 @@ void Game::CreateSkyboxes() {
 
 void Game::CreateParticleEmitters()
 {
-	ParticleEmitterParams peParamsPepper = {};
-	peParamsPepper.emitFrequency			= 5.0f;
-	peParamsPepper.lifetime					= 2.0f;
-	peParamsPepper.acceleration				= XMFLOAT3(0.0f, -1.0f, 0.0f);
-	peParamsPepper.startPositionOffset		= XMFLOAT3(0.0f, 0.0f, 0.0f);
-	peParamsPepper.startPositionVariance	= XMFLOAT3(10.0f, 1.0f, 10.0f);
-	peParamsPepper.startColor				= XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	peParamsPepper.finalColor				= XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f);
-
+	// EMITTERS 0-2
+	ParticleEmitterParams peParams = {};
+	peParams.emitFrequency			= 5.0f;
+	peParams.lifetime				= 2.0f;
+	peParams.acceleration			= XMFLOAT3(0.0f, -1.0f, 0.0f);
+	peParams.startPositionOffset	= XMFLOAT3(0.0f, 0.0f, 0.0f);
+	peParams.startPositionVariance	= XMFLOAT3(10.0f, 1.0f, 10.0f);
+	peParams.startColor				= XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	peParams.finalColor				= XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f);
 	particleEmitters.push_back(make_shared<ParticleEmitter>(
-		"PE_Pepper", materials[10], peParamsPepper, 20
+		"PE_Pepper", materials[10], peParams, 20
 	));
+
+	peParams = {};
+	peParams.emitFrequency			= 20.0f;
+	peParams.lifetime				= 1.0f;
+	peParams.startPositionVariance	= XMFLOAT3(1.0f, 1.0f, 1.0f);
+	peParams.startColor				= XMFLOAT4(0.5f, 0.5f, 0.5f, 0.5f);
+	peParams.startColorVariance		= XMFLOAT4(0.25f, 0.25f, 0.25f, 0.5f);
+	peParams.finalColor				= XMFLOAT4(0.9f, 0.9f, 0.9f, 0.5f);
+	peParams.finalColorVariance		= XMFLOAT4(0.1f, 0.1f, 0.1f, 0.5f);
+	peParams.startVelocity			= XMFLOAT3(0.0f, 3.0f, 0.0f);
+	peParams.startVelocityVariance	= XMFLOAT3(0.2f, 1.0f, 0.2f);
+	particleEmitters.push_back(make_shared<ParticleEmitter>(
+		"PE_Sparks", materials[11], peParams, 50
+	));
+
+	peParams = {};
+	peParams.emitFrequency			= 50.0f;
+	peParams.lifetime				= 2.0f;
+	peParams.startPositionVariance	= XMFLOAT3(0.5f, 0.5f, 0.5f);
+	peParams.startColor				= XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	peParams.startColorVariance		= XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
+	peParams.finalColor				= XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
+	peParams.finalColorVariance		= XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
+	peParams.startVelocity			= XMFLOAT3(0.0f, 1.0f, 0.0f);
+	peParams.startVelocityVariance	= XMFLOAT3(10.0f, 2.0f, 10.0f);
+	auto peDots = make_shared<ParticleEmitter>(
+		"PE_Dots", materials[12], peParams, 100
+	);
+	peDots->GetTransform()->SetPosition(5.0f, 0.0f, 0.0f);
+	particleEmitters.push_back(peDots);
 }
 
 // --------------------------------------------------------
@@ -537,7 +579,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	// PARTICLES
 	{
-		// Set 
+		// Set pipeline state for rendering particles
 		Graphics::Context->OMSetDepthStencilState(particleDepthStencilState.Get(), 0);
 		Graphics::Context->OMSetBlendState(particleBlendState.Get(), NULL, 0xffffffff);
 
@@ -1832,23 +1874,49 @@ void Game::ImGuiBuild() {
 			ImGui::PushID(i);
 
 			if (ImGui::TreeNode("", "(%06d) %s", i, particleEmitters[i]->GetName())) {
-				unsigned int particleCount = particleEmitters[i]->GetParticleCount();
-				int firstAlive = particleEmitters[i]->GetFirstAlive();
-				int firstDead = particleEmitters[i]->GetFirstDead();
-				int aliveCount = particleEmitters[i]->GetAliveCount();
 
-				ImGui::Text("Total Particles: %d", particleCount);
-				ImGui::Text("First Alive: %d", firstAlive);
-				ImGui::Text("First Dead: %d", firstDead);
-				ImGui::Text("Alive Count: %d", aliveCount);
+				if (ImGui::TreeNode("stats", "Show Particle Stats")) {
+					unsigned int particleCount = particleEmitters[i]->GetParticleCount();
+					int firstAlive = particleEmitters[i]->GetFirstAlive();
+					int firstDead = particleEmitters[i]->GetFirstDead();
+					int aliveCount = particleEmitters[i]->GetAliveCount();
 
-				float firstAliveFrac = firstAlive / (float)particleCount;
-				float firstDeadFrac = firstDead / (float)particleCount;
-				float aliveCountFrac = aliveCount / (float)particleCount;
+					ImGui::Text("Total Particles: %d", particleCount);
+					ImGui::Text("First Alive: %d", firstAlive);
+					ImGui::Text("First Dead: %d", firstDead);
+					ImGui::Text("Alive Count: %d", aliveCount);
 
-				ImGui::ProgressBar(firstAliveFrac, ImVec2(0.f, 0.f), "First Alive");
-				ImGui::ProgressBar(firstDeadFrac, ImVec2(0.f, 0.f), "First Dead");
-				ImGui::ProgressBar(aliveCountFrac, ImVec2(0.f, 0.f), "Alive Count");
+					float firstAliveFrac = firstAlive / (float)particleCount;
+					float firstDeadFrac = firstDead / (float)particleCount;
+					float aliveCountFrac = aliveCount / (float)particleCount;
+
+					ImGui::ProgressBar(firstAliveFrac, ImVec2(0.f, 0.f), "First Alive");
+					ImGui::ProgressBar(firstDeadFrac, ImVec2(0.f, 0.f), "First Dead");
+					ImGui::ProgressBar(aliveCountFrac, ImVec2(0.f, 0.f), "Alive Count");
+
+					ImGui::TreePop();
+					ImGui::Spacing();
+				}
+
+				auto peMat = particleEmitters[i]->GetMaterial();
+				auto uv_pos = peMat->GetUVPosition();
+				auto uv_sca = peMat->GetUVScale();
+
+				ImGui::Text("Textures:");
+				for (ID3D11ShaderResourceView* texture : peMat->GetTextures()) {
+					D3D11_SHADER_RESOURCE_VIEW_DESC blah = {};
+					texture->GetDesc(&blah);
+
+					// Only display the texture if it's a Texture2D
+					if (blah.ViewDimension == D3D11_SRV_DIMENSION_TEXTURE2D) {
+						ImGui::Image(
+							(void*)texture,
+							ImVec2(256, 256),
+							ImVec2(uv_pos.x, uv_pos.y),
+							ImVec2(uv_pos.x + uv_sca.x, uv_pos.y + uv_sca.y)
+						);
+					}
+				}
 
 				ImGui::TreePop();
 				ImGui::Spacing();
