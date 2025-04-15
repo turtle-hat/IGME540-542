@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "Particle.h"
+#include "Camera.h"
 #include "Material.h"
 #include "Transform.h"
 
@@ -29,7 +30,7 @@ public:
 	ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, ParticleEmitterParams _params, int _particleCount);
 	~ParticleEmitter();
 	void Update(float _deltaTime, float _totalTime);
-	void Draw();
+	void Draw(std::shared_ptr<Camera> _camera, float _totalTime);
 
 	ParticleEmitterParams GetParams();
 	void SetParams(ParticleEmitterParams _params);
@@ -72,6 +73,7 @@ private:
 	// GPU buffer references
 	Microsoft::WRL::ComPtr<ID3D11Buffer> particleDataBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> particleDataSRV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
 
 	// Transform for positional information and material for 
 	// Only parts of their functionality is used

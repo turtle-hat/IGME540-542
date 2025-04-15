@@ -68,6 +68,7 @@ private:
 	void SetMaterialEnvironmentMaps(std::shared_ptr<Skybox> _skybox);
 	void BuildShadowMap();
 	void RebuildShadowMap();
+	void BuildParticleResources();
 	void BuildShadowMatrices();
 	void BuildPostProcesses();
 	void RebuildPostProcesses();
@@ -176,8 +177,8 @@ private:
 	std::shared_ptr<SimpleVertexShader> vsParticle;
 	std::shared_ptr<SimplePixelShader> psParticle;
 	// Pipeline State
-	std::shared_ptr<ID3D11DepthStencilState> particleDepthStencilState;
-	std::shared_ptr<ID3D11BlendState> particleBlendState;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> particleDepthStencilState;
+	Microsoft::WRL::ComPtr<ID3D11BlendState> particleBlendState;
 
 
 	// SHADOWS

@@ -1,11 +1,5 @@
 #include "ShaderStructs.hlsli"
 
-// Data from our primary constant buffer
-cbuffer PrimaryBuffer : register(b0)
-{
-	
-}
-
 Texture2D ParticleTexture : register(t0);
 
 SamplerState BasicSampler : register(s0); // "s" registers for samplers

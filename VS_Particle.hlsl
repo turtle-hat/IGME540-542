@@ -6,9 +6,10 @@ cbuffer PrimaryBuffer : register(b0)
     float4x4 tfProjection;
     
     float lifetime;
-    float acceleration;
+    float3 acceleration;
+    
     float totalTime;
-    float padding;
+    float3 padding;
 };
 
 StructuredBuffer<Particle> ParticleData : register(t0);
@@ -59,7 +60,7 @@ VertexToPixel_Particle main(uint id : SV_VertexID)
     output.uv = uvs[cornerIndex];
 
     // Interpolate color
-    output.color = lerp(p.StartColor, p.FinalColor, agePercent);
+    output.colorTint = lerp(p.StartColor, p.FinalColor, agePercent);
     
     return output;
 }

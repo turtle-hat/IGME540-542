@@ -40,6 +40,8 @@ void Game::Initialize()
 	CreateGeometry();
 	CreateCameras();
 	CreateSkyboxes();
+	BuildParticleResources();
+	CreateParticleEmitters();
 	BuildPostProcesses();
 
 	// Set initial graphics API state
@@ -359,6 +361,11 @@ void Game::Update(float deltaTime, float totalTime)
 		sin(totalTime * 4.0f) * 2.0f + 2.0f,
 		3.0f);
 
+	// Update all emitters
+	for (auto emitter : particleEmitters) {
+		emitter->Update(deltaTime, totalTime);
+	}
+
 	ImGuiUpdate(deltaTime);
 	ImGuiBuild();
 
@@ -526,7 +533,18 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	// PARTICLES
 	{
+		// Set 
+		Graphics::Context->OMSetDepthStencilState(particleDepthStencilState.Get(), 0);
+		Graphics::Context->OMSetBlendState(particleBlendState.Get(), NULL, 0xffffffff);
 
+		for (auto emitter : particleEmitters) {
+			emitter->Draw(cameras[pCameraCurrent], totalTime);
+		}
+
+		// Reset to default states for post-processing
+		Graphics::Context->OMSetDepthStencilState(0, 0);
+		Graphics::Context->OMSetBlendState(0, NULL, 0xffffffff);
+		Graphics::Context->RSSetState(0);
 	}
 
 	// POST-PROCESS
@@ -1068,6 +1086,30 @@ void Game::RebuildShadowMap()
 	for (int i = 3; i < 10; i++) {
 		materials[i]->AddTextureSRV("MapShadow", shadowSRV);
 	}
+}
+
+void Game::BuildParticleResources()
+{
+	// Code for creating pipeline resources by Professor Chris Cascioli
+
+	// Set up render states for particles (since all emitters might use similar ones)
+	D3D11_DEPTH_STENCIL_DESC particleDepthDesc = {};
+	particleDepthDesc.DepthEnable		= true; // READ from depth buffer
+	particleDepthDesc.DepthWriteMask	= D3D11_DEPTH_WRITE_MASK_ZERO; // No depth WRITING
+	particleDepthDesc.DepthFunc			= D3D11_COMPARISON_LESS; // Standard depth comparison
+	Graphics::Device->CreateDepthStencilState(&particleDepthDesc, particleDepthStencilState.GetAddressOf());
+
+	// Blend State
+	D3D11_BLEND_DESC additiveBlendDesc = {};
+	additiveBlendDesc.RenderTarget[0].BlendEnable			= true;
+	additiveBlendDesc.RenderTarget[0].BlendOp				= D3D11_BLEND_OP_ADD; // Add both colors
+	additiveBlendDesc.RenderTarget[0].BlendOpAlpha			= D3D11_BLEND_OP_ADD; // Add both alpha values
+	additiveBlendDesc.RenderTarget[0].SrcBlend				= D3D11_BLEND_ONE;
+	additiveBlendDesc.RenderTarget[0].DestBlend				= D3D11_BLEND_ONE;
+	additiveBlendDesc.RenderTarget[0].SrcBlendAlpha			= D3D11_BLEND_ONE;
+	additiveBlendDesc.RenderTarget[0].DestBlendAlpha		= D3D11_BLEND_ONE;
+	additiveBlendDesc.RenderTarget[0].RenderTargetWriteMask	= D3D11_COLOR_WRITE_ENABLE_ALL;
+	Graphics::Device->CreateBlendState(&additiveBlendDesc, particleBlendState.GetAddressOf());
 }
 
 // --------------------------------------------------------

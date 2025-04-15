@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include "Graphics.h"
+#include "Vertex.h"
 
 using namespace DirectX;
 
@@ -61,8 +62,10 @@ void ParticleEmitter::Update(float _deltaTime, float _totalTime)
 	}
 }
 
-void ParticleEmitter::Draw()
+void ParticleEmitter::Draw(std::shared_ptr<Camera> _camera, float _totalTime)
 {
+	// Copy Particles to the GPU
+
 	// Map the buffer, locking it on the GPU so we can write to it
 	D3D11_MAPPED_SUBRESOURCE mapped = {};
 
@@ -96,6 +99,45 @@ void ParticleEmitter::Draw()
 
 	// Unmap (unlock) now that we're done with it
 	Graphics::Context->Unmap(particleDataBuffer.Get(), 0);
+
+
+
+	// Set buffers in the input assembler stage
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	Graphics::Context->IASetVertexBuffers(0, 1, NULL, &stride, &offset);
+	Graphics::Context->IASetIndexBuffer(indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+	// Prepare the material for drawing
+	material->PrepareMaterial();
+
+	// Get references to the emitter's shaders
+	std::shared_ptr<SimpleVertexShader> vs = material->GetVertexShader();
+	std::shared_ptr<SimplePixelShader> ps = material->GetPixelShader();
+
+	// Set vertex and pixel shaders
+	vs->SetShader();
+	ps->SetShader();
+
+	// Fill constant buffers with entity's data
+	// VERTEX
+	vs->SetMatrix4x4("tfView", _camera->GetViewMatrix());
+	vs->SetMatrix4x4("tfProjection", _camera->GetProjectionMatrix());
+	vs->SetFloat("lifetime", params.lifetime);
+	vs->SetFloat3("acceleration", params.acceleration);
+	vs->SetFloat("totalTime", _totalTime);
+	vs->SetFloat3("padding", XMFLOAT3(0.0f, 0.0f, 0.0f));
+	// PIXEL
+	// None yet
+
+	// COPY DATA TO CONSTANT BUFFERS
+	vs->CopyAllBufferData();
+	ps->CopyAllBufferData();
+
+	Graphics::Context->DrawIndexed(
+		particleCount * 6,	// The number of indices to use (we could draw a subset if we wanted)
+		0,					// Offset to the first index we want to use
+		0);					// Offset to add to each index when looking up vertices
 }
 
 ParticleEmitterParams ParticleEmitter::GetParams()
@@ -220,10 +262,45 @@ void ParticleEmitter::EmitParticle(float _totalTime)
 
 /// <summary>
 /// Creates or recreates references to data buffer and SRV
+/// Modified from code by Professor Chris Cascioli
 /// </summary>
 void ParticleEmitter::RebuildDataBuffers()
 {
-	// Make an index buffer to hold 
+	// Make an index buffer to hold particle geometry
+	indexBuffer.Reset();
+	// Temporary array to store indices during buffer creation
+	unsigned int* indices = new unsigned int[particleCount * 6];
+	int indexCount = 0;
+
+	// Iterate through the indices of each quad (set of 4 vertices)
+	for (int i = 0; i < particleCount * 4; i += 4) {
+		indices[indexCount++] = i;
+		indices[indexCount++] = i + 1;
+		indices[indexCount++] = i + 2;
+		indices[indexCount++] = i;
+		indices[indexCount++] = i + 2;
+		indices[indexCount++] = i + 3;
+	}
+	
+	// Describe the buffer
+	D3D11_BUFFER_DESC ibd = {};
+	ibd.Usage				= D3D11_USAGE_DEFAULT;
+	ibd.ByteWidth			= sizeof(unsigned int) * particleCount * 6;	// 3 = number of indices in the buffer
+	ibd.BindFlags			= D3D11_BIND_INDEX_BUFFER;
+	ibd.CPUAccessFlags		= 0;
+	ibd.MiscFlags			= 0;
+	ibd.StructureByteStride	= 0;
+
+	// Specify the initial data for this buffer
+	D3D11_SUBRESOURCE_DATA initialIndexData = {};
+	initialIndexData.pSysMem = indices;
+
+	// Actually create the buffer with the initial data
+	// - Once we do this, we'll NEVER CHANGE THE BUFFER AGAIN
+	Graphics::Device->CreateBuffer(&ibd, &initialIndexData, indexBuffer.GetAddressOf());
+	delete[] indices;	// Clear memory now that indices are on GPU
+
+
 
 	// Make a dynamic buffer to hold all particle data on GPU
 	// Note: We'll be overwriting this every frame with new lifetime data
