@@ -31,7 +31,7 @@ VertexToPixel_Particle main(uint id : SV_VertexID)
     
     // Simulate position mathematically
     // x_f = 0.5at^2 + vt + x_i
-    float3 pos = 0.5f * acceleration * totalTime * totalTime + p.StartVelocity * totalTime + p.StartPosition;
+    float3 pos = 0.5f * acceleration * age * age + p.StartVelocity * age + p.StartPosition;
 
     
     // Offset positions for the 4 corners of a quad - we'll only use one for each

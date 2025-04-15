@@ -14,6 +14,7 @@ using namespace DirectX;
 ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, ParticleEmitterParams _params, int _particleCount, std::shared_ptr<Transform> _transform)
 {
 	params = _params;
+	particles = nullptr;
 	// Sets particle count, builds particle array, and builds data buffers
 	SetParticleCount(_particleCount);
 	emitPeriod = 1.0f / params.emitFrequency;
@@ -27,6 +28,7 @@ ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<Material> _m
 ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, ParticleEmitterParams _params, int _particleCount)
 {
 	params = _params;
+	particles = nullptr;
 	// Sets particle count, builds particle array, and builds data buffers
 	SetParticleCount(_particleCount);
 	emitPeriod = 1.0f / params.emitFrequency;
@@ -50,8 +52,8 @@ void ParticleEmitter::Update(float _deltaTime, float _totalTime)
 	lastEmitTimer += _deltaTime;
 	
 	// Update each individual living particle
-	for (int i = firstAlive; i < aliveCount; i++) {
-
+	for (unsigned int i = firstAlive; i < aliveCount; i++) {
+		UpdateParticle(_totalTime, i % particleCount);
 	}
 
 	// Create as many Particles as the timeframe would allow
@@ -105,7 +107,8 @@ void ParticleEmitter::Draw(std::shared_ptr<Camera> _camera, float _totalTime)
 	// Set buffers in the input assembler stage
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	Graphics::Context->IASetVertexBuffers(0, 1, NULL, &stride, &offset);
+	ID3D11Buffer* nullBuffer = 0;
+	Graphics::Context->IASetVertexBuffers(0, 1, &nullBuffer, &stride, &offset);
 	Graphics::Context->IASetIndexBuffer(indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
 	// Prepare the material for drawing
@@ -198,6 +201,21 @@ std::shared_ptr<Transform> ParticleEmitter::GetTransform()
 	return transform;
 }
 
+int ParticleEmitter::GetFirstAlive()
+{
+	return firstAlive;
+}
+
+int ParticleEmitter::GetFirstDead()
+{
+	return firstDead;
+}
+
+unsigned int ParticleEmitter::GetAliveCount()
+{
+	return aliveCount;
+}
+
 const char* ParticleEmitter::GetName()
 {
 	return name;
@@ -226,9 +244,10 @@ void ParticleEmitter::EmitParticle(float _totalTime)
 
 	XMFLOAT3 emitterPosition = transform->GetPosition();
 
+	// Set the emit time of the particle
 	particles[firstDead].emitTime = _totalTime;
 
-	// Set 
+	// Set randomized parameters
 	particles[firstDead].startPosition = XMFLOAT3(
 		emitterPosition.x + params.startPositionOffset.x + RandomRange(params.startPositionVariance.x),
 		emitterPosition.y + params.startPositionOffset.y + RandomRange(params.startPositionVariance.y),
@@ -273,7 +292,7 @@ void ParticleEmitter::RebuildDataBuffers()
 	int indexCount = 0;
 
 	// Iterate through the indices of each quad (set of 4 vertices)
-	for (int i = 0; i < particleCount * 4; i += 4) {
+	for (unsigned int i = 0; i < particleCount * 4; i += 4) {
 		indices[indexCount++] = i;
 		indices[indexCount++] = i + 1;
 		indices[indexCount++] = i + 2;

@@ -33,17 +33,17 @@ public:
 	void Draw(std::shared_ptr<Camera> _camera, float _totalTime);
 
 	ParticleEmitterParams GetParams();
-	void SetParams(ParticleEmitterParams _params);
-
 	unsigned int GetParticleCount();
-	void SetParticleCount(unsigned int _particleCount);
-
 	std::shared_ptr<Material> GetMaterial();
-	void SetMaterial(std::shared_ptr<Material> _material);
-
 	std::shared_ptr<Transform> GetTransform();
-
+	int GetFirstAlive();
+	int GetFirstDead();
+	unsigned int GetAliveCount();
 	const char* GetName();
+
+	void SetParams(ParticleEmitterParams _params);
+	void SetParticleCount(unsigned int _particleCount);
+	void SetMaterial(std::shared_ptr<Material> _material);
 
 private:
 	void UpdateParticle(float _totalTime, int index);
@@ -58,7 +58,7 @@ private:
 	// The first particle in the particles ring array that's dead
 	int firstDead;
 	// The number of particles in this emitter that are alive
-	int aliveCount;
+	unsigned int aliveCount;
 	// Tracks when the last particle was emitted
 	float lastEmitTimer;
 	// 

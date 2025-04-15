@@ -218,7 +218,7 @@ void Game::CreateMaterials()
 
 	// MATERIALS 10-12
 	AddMaterial("Mat_Pepper_Emitter",		vsParticle, psParticle, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
-	materials[10]->AddTextureSRV("ParticleTexture", textures[20]);
+	materials[10]->AddTextureSRV("ParticleTexture", textures[16]);
 	materials[10]->AddSampler("BasicSampler", samplerState);
 }
 
@@ -307,12 +307,16 @@ void Game::CreateSkyboxes() {
 void Game::CreateParticleEmitters()
 {
 	ParticleEmitterParams peParamsPepper = {};
-	peParamsPepper.emitFrequency			= 20.0f;
+	peParamsPepper.emitFrequency			= 1.0f;
 	peParamsPepper.lifetime					= 2.0f;
-	peParamsPepper.startPositionVariance	= XMFLOAT3(2.0f, 1.0f, 2.0f);
+	peParamsPepper.acceleration				= XMFLOAT3(0.0f, -1.0f, 0.0f);
+	peParamsPepper.startPositionOffset		= XMFLOAT3(0.0f, 0.0f, 0.0f);
+	peParamsPepper.startPositionVariance	= XMFLOAT3(10.0f, 1.0f, 10.0f);
+	peParamsPepper.startColor				= XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	peParamsPepper.finalColor				= XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f);
 
 	particleEmitters.push_back(make_shared<ParticleEmitter>(
-		"PE_Pepper", materials[10], peParamsPepper, 50
+		"PE_Pepper", materials[10], peParamsPepper, 20
 	));
 }
 
@@ -1810,6 +1814,33 @@ void Game::ImGuiBuild() {
 				ImGui::Spacing();
 			}
 			
+			ImGui::PopID();
+			ImGui::Spacing();
+		}
+		ImGui::PopID();
+
+		ImGui::Spacing();
+	}
+
+	if (ImGui::CollapsingHeader("Particle Emitters")) {			// Info about each particle emitter
+		ImGui::Spacing();
+
+		ImGui::PushID("PARTICLEEMITTER");
+
+		for (int i = 0; i < particleEmitters.size(); i++) {
+			// Each skybox gets its own Tree Node
+			ImGui::PushID(i);
+
+			if (ImGui::TreeNode("", "(%06d) %s", i, particleEmitters[i]->GetName())) {
+				ImGui::Text("Total Particles: %d", particleEmitters[i]->GetParticleCount());
+				ImGui::Text("First Alive: %d", particleEmitters[i]->GetFirstAlive());
+				ImGui::Text("First Dead: %d", particleEmitters[i]->GetFirstDead());
+				ImGui::Text("Alive Count: %d", particleEmitters[i]->GetAliveCount());
+
+				ImGui::TreePop();
+				ImGui::Spacing();
+			}
+
 			ImGui::PopID();
 			ImGui::Spacing();
 		}
