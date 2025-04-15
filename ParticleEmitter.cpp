@@ -50,10 +50,13 @@ void ParticleEmitter::Update(float _deltaTime, float _totalTime)
 {
 	// Add to timer
 	lastEmitTimer += _deltaTime;
-	
+
+	int startAliveCount = aliveCount;
+	int startFirstAlive = firstAlive;
+
 	// Update each individual living particle
-	for (unsigned int i = firstAlive; i < aliveCount; i++) {
-		UpdateParticle(_totalTime, i % particleCount);
+	for (int i = 0; i < startAliveCount; i++) {
+		UpdateParticle(_totalTime, (startFirstAlive + i) % (int)particleCount);
 	}
 
 	// Create as many Particles as the timeframe would allow
@@ -211,7 +214,7 @@ int ParticleEmitter::GetFirstDead()
 	return firstDead;
 }
 
-unsigned int ParticleEmitter::GetAliveCount()
+int ParticleEmitter::GetAliveCount()
 {
 	return aliveCount;
 }
@@ -235,12 +238,9 @@ void ParticleEmitter::UpdateParticle(float _totalTime, int index)
 void ParticleEmitter::EmitParticle(float _totalTime)
 {
 	// Do not emit if there's already the maximum number of particles
-	if (aliveCount >= particleCount) {
+	if (aliveCount >= (int)particleCount) {
 		return;
 	}
-
-	// Recognize another particle as alive
-	aliveCount++;
 
 	XMFLOAT3 emitterPosition = transform->GetPosition();
 
@@ -274,7 +274,10 @@ void ParticleEmitter::EmitParticle(float _totalTime)
 		std::clamp(params.finalColor.w + RandomRange(params.finalColorVariance.w), 0.0f, 1.0f)
 	);
 
-	// Recognize this particle as now alive
+	// Recognize another particle as alive
+	aliveCount++;
+
+	// Move first dead marker
 	firstDead++;
 	firstDead %= particleCount;
 }

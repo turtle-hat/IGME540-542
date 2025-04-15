@@ -38,7 +38,7 @@ public:
 	std::shared_ptr<Transform> GetTransform();
 	int GetFirstAlive();
 	int GetFirstDead();
-	unsigned int GetAliveCount();
+	int GetAliveCount();
 	const char* GetName();
 
 	void SetParams(ParticleEmitterParams _params);
@@ -58,10 +58,11 @@ private:
 	// The first particle in the particles ring array that's dead
 	int firstDead;
 	// The number of particles in this emitter that are alive
-	unsigned int aliveCount;
+	int aliveCount;
+
 	// Tracks when the last particle was emitted
 	float lastEmitTimer;
-	// 
+	// The time span in between each particle emission
 	float emitPeriod;
 
 	// Bundles emitter-specific parameters into a single structure for ease of creation

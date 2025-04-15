@@ -307,7 +307,7 @@ void Game::CreateSkyboxes() {
 void Game::CreateParticleEmitters()
 {
 	ParticleEmitterParams peParamsPepper = {};
-	peParamsPepper.emitFrequency			= 1.0f;
+	peParamsPepper.emitFrequency			= 5.0f;
 	peParamsPepper.lifetime					= 2.0f;
 	peParamsPepper.acceleration				= XMFLOAT3(0.0f, -1.0f, 0.0f);
 	peParamsPepper.startPositionOffset		= XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -1832,10 +1832,23 @@ void Game::ImGuiBuild() {
 			ImGui::PushID(i);
 
 			if (ImGui::TreeNode("", "(%06d) %s", i, particleEmitters[i]->GetName())) {
-				ImGui::Text("Total Particles: %d", particleEmitters[i]->GetParticleCount());
-				ImGui::Text("First Alive: %d", particleEmitters[i]->GetFirstAlive());
-				ImGui::Text("First Dead: %d", particleEmitters[i]->GetFirstDead());
-				ImGui::Text("Alive Count: %d", particleEmitters[i]->GetAliveCount());
+				unsigned int particleCount = particleEmitters[i]->GetParticleCount();
+				int firstAlive = particleEmitters[i]->GetFirstAlive();
+				int firstDead = particleEmitters[i]->GetFirstDead();
+				int aliveCount = particleEmitters[i]->GetAliveCount();
+
+				ImGui::Text("Total Particles: %d", particleCount);
+				ImGui::Text("First Alive: %d", firstAlive);
+				ImGui::Text("First Dead: %d", firstDead);
+				ImGui::Text("Alive Count: %d", aliveCount);
+
+				float firstAliveFrac = firstAlive / (float)particleCount;
+				float firstDeadFrac = firstDead / (float)particleCount;
+				float aliveCountFrac = aliveCount / (float)particleCount;
+
+				ImGui::ProgressBar(firstAliveFrac, ImVec2(0.f, 0.f), "First Alive");
+				ImGui::ProgressBar(firstDeadFrac, ImVec2(0.f, 0.f), "First Dead");
+				ImGui::ProgressBar(aliveCountFrac, ImVec2(0.f, 0.f), "Alive Count");
 
 				ImGui::TreePop();
 				ImGui::Spacing();
