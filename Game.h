@@ -180,6 +180,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> particleDepthStencilState;
 	Microsoft::WRL::ComPtr<ID3D11BlendState> particleBlendState;
 
+	// FOLIAGE
+
+
 
 	// SHADOWS
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowDSV;
