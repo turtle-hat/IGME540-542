@@ -137,6 +137,16 @@ void Game::LoadShaders()
 
 	// PIXEL SHADERS
 	AddPixelShader(L"PS_Particle.cso",			psParticle);
+
+
+
+	// FOLIAGE SHADERS
+
+	// VERTEX SHADER
+	AddVertexShader(L"VS_FoliageLeaf.cso", vsFoliageLeaf);
+
+	// PIXEL SHADERS
+	AddPixelShader(L"PS_FoliageLeaf.cso", psFoliageLeaf);
 }
 
 // --------------------------------------------------------
@@ -168,6 +178,12 @@ void Game::CreateMaterials()
 	AddTexture(L"../../Assets/Textures/Particles/spark_03.png");
 	AddTexture(L"../../Assets/Textures/Particles/spark_04.png");
 	AddTexture(L"../../Assets/Textures/Particles/z_Pepper.png");
+	// TEXTURES 21-24
+	AddTexture(L"../../Assets/Textures/Foliage/T_Branch_AM.png");
+	AddTexture(L"../../Assets/Textures/Foliage/T_Branch_NR.png");
+	AddTexture(L"../../Assets/Textures/Foliage/T_Leaf_A.png");
+	AddTexture(L"../../Assets/Textures/Foliage/T_Leaf_N.png");
+
 
 
 	// Set default sampler state settings
@@ -232,6 +248,17 @@ void Game::CreateMaterials()
 	AddMaterial("Mat_Dots_Emitter", vsParticle, psParticle, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	materials[12]->AddTextureSRV("ParticleTexture", textures[14]);
 	materials[12]->AddSampler("BasicSampler", samplerState);
+
+	// MATERIALS 13-14
+	AddPBRMaterial("Mat_FoliageBranch_PBR", vsPBR, psPBR, 1.0f, 1.0f);
+	materials[13]->AddTextureSRV("MapAlbedoMetalness", textures[21]);
+	materials[13]->AddTextureSRV("MapNormalRoughness", textures[22]);
+	materials[13]->AddSampler("BasicSampler", samplerState);
+
+	AddMaterial("Mat_FoliageLeaf", vsFoliageLeaf, psFoliageLeaf, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	materials[14]->AddTextureSRV("MapAlbedoAlpha", textures[23]);
+	materials[14]->AddTextureSRV("MapNormal", textures[24]);
+
 }
 
 // --------------------------------------------------------
@@ -251,7 +278,7 @@ void Game::CreateGeometry()
 	meshes.push_back(make_shared<Mesh>("M_Torus", FixPath(L"../../Assets/Models/torus.obj").c_str()));
 
 	// ENTITIES 0-6
-	AddEntity("E_ObjectBronze",			0, 3, XMFLOAT3(-9.0f,  0.0f, 0.0f));
+	AddEntity("E_ObjectBronze",			0, 13, XMFLOAT3(-9.0f,  0.0f, 0.0f));
 	AddEntity("E_ObjectCobblestone",	1, 4, XMFLOAT3(-6.0f,  0.0f, 0.0f));
 	AddEntity("E_ObjectFloor",			2, 5, XMFLOAT3(-3.0f,  0.0f, 0.0f));
 	AddEntity("E_ObjectPaint",			3, 6, XMFLOAT3( 0.0f, -1.0f, 0.0f));
@@ -1076,8 +1103,10 @@ void Game::BuildShadowMap() {
 	Graphics::Device->CreateSamplerState(&shadowSampDesc, &shadowSampler);
 
 	// Add shadow map sampler state to materials that need it
-	for (int i = 3; i < materials.size(); i++) {
-		materials[i]->AddSampler("ShadowSampler", shadowSampler);
+	for (int i = 0; i < materials.size(); i++) {
+		if (materials[i]->isPBR) {
+			materials[i]->AddSampler("ShadowSampler", shadowSampler);
+		}
 	}
 
 	// Build DSV and SRV
@@ -1132,8 +1161,10 @@ void Game::RebuildShadowMap()
 		shadowSRV.GetAddressOf());
 
 	// Add shadow map texture to materials that need it
-	for (int i = 3; i < 10; i++) {
-		materials[i]->AddTextureSRV("MapShadow", shadowSRV);
+	for (int i = 0; i < materials.size(); i++) {
+		if (materials[i]->isPBR) {
+			materials[i]->AddTextureSRV("MapShadow", shadowSRV);
+		}
 	}
 }
 

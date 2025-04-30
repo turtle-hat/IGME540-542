@@ -13,6 +13,7 @@
 #include "Camera.h"
 #include "Skybox.h"
 #include "ParticleEmitter.h"
+#include "Foliage.h"
 #include "SimpleShader.h"
 
 class Game
@@ -181,6 +182,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11BlendState> particleBlendState;
 
 	// FOLIAGE
+	std::vector<std::shared_ptr<Foliage>> foliages;
+	// Shaders
+	std::shared_ptr<SimpleVertexShader> vsFoliageLeaf;
+	std::shared_ptr<SimplePixelShader> psFoliageLeaf;
 
 
 
