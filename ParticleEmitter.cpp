@@ -23,6 +23,7 @@ ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<Material> _m
 	transform = _transform;
 
 	name = _name;
+	active = true;
 }
 
 ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<Material> _material, ParticleEmitterParams _params, int _particleCount)
@@ -38,6 +39,7 @@ ParticleEmitter::ParticleEmitter(const char* _name, std::shared_ptr<Material> _m
 	transform = std::make_shared<Transform>();
 
 	name = _name;
+	active = true;
 }
 
 ParticleEmitter::~ParticleEmitter()

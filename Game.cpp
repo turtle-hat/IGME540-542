@@ -327,9 +327,9 @@ void Game::CreateParticleEmitters()
 	peParams.startPositionVariance	= XMFLOAT3(10.0f, 1.0f, 10.0f);
 	peParams.startColor				= XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	peParams.finalColor				= XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f);
-	particleEmitters.push_back(make_shared<ParticleEmitter>(
-		"PE_Pepper", materials[10], peParams, 20
-	));
+	auto pePepper = make_shared<ParticleEmitter>("PE_Pepper", materials[10], peParams, 20);
+	pePepper->active = false;
+	particleEmitters.push_back(pePepper);
 
 	peParams = {};
 	peParams.emitFrequency			= 20.0f;
@@ -341,9 +341,9 @@ void Game::CreateParticleEmitters()
 	peParams.finalColorVariance		= XMFLOAT4(0.1f, 0.1f, 0.1f, 0.5f);
 	peParams.startVelocity			= XMFLOAT3(0.0f, 3.0f, 0.0f);
 	peParams.startVelocityVariance	= XMFLOAT3(0.2f, 1.0f, 0.2f);
-	particleEmitters.push_back(make_shared<ParticleEmitter>(
-		"PE_Sparks", materials[11], peParams, 50
-	));
+	auto peSparks = make_shared<ParticleEmitter>("PE_Sparks", materials[11], peParams, 50);
+	peSparks->active = false;
+	particleEmitters.push_back(peSparks);
 
 	peParams = {};
 	peParams.emitFrequency			= 50.0f;
@@ -355,10 +355,9 @@ void Game::CreateParticleEmitters()
 	peParams.finalColorVariance		= XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
 	peParams.startVelocity			= XMFLOAT3(0.0f, 1.0f, 0.0f);
 	peParams.startVelocityVariance	= XMFLOAT3(10.0f, 2.0f, 10.0f);
-	auto peDots = make_shared<ParticleEmitter>(
-		"PE_Dots", materials[12], peParams, 100
-	);
+	auto peDots = make_shared<ParticleEmitter>("PE_Dots", materials[12], peParams, 100);
 	peDots->GetTransform()->SetPosition(5.0f, 0.0f, 0.0f);
+	peDots->active = false;
 	particleEmitters.push_back(peDots);
 }
 
@@ -409,7 +408,9 @@ void Game::Update(float deltaTime, float totalTime)
 
 	// Update all emitters
 	for (auto emitter : particleEmitters) {
-		emitter->Update(deltaTime, totalTime);
+		if (emitter->active) {
+			emitter->Update(deltaTime, totalTime);
+		}
 	}
 
 	ImGuiUpdate(deltaTime);
@@ -584,7 +585,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		Graphics::Context->OMSetBlendState(particleBlendState.Get(), NULL, 0xffffffff);
 
 		for (auto emitter : particleEmitters) {
-			emitter->Draw(cameras[pCameraCurrent], totalTime);
+			if (emitter->active) {
+				emitter->Draw(cameras[pCameraCurrent], totalTime);
+			}
 		}
 
 		// Reset to default states for post-processing
@@ -1870,9 +1873,17 @@ void Game::ImGuiBuild() {
 		ImGui::PushID("PARTICLEEMITTER");
 
 		for (int i = 0; i < particleEmitters.size(); i++) {
-			// Each skybox gets its own Tree Node
+			// Each emitter gets its own Tree Node
 			ImGui::PushID(i);
 
+			bool active = particleEmitters[i]->active;
+			ImGui::AlignTextToFramePadding();
+			if (ImGui::Checkbox("", &active)) {
+				particleEmitters[i]->active = active;
+			}
+			ImGui::SetItemTooltip("Toggle whether emitter is active");
+
+			ImGui::SameLine();
 			if (ImGui::TreeNode("", "(%06d) %s", i, particleEmitters[i]->GetName())) {
 
 				if (ImGui::TreeNode("stats", "Show Particle Stats")) {

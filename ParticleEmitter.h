@@ -45,6 +45,9 @@ public:
 	void SetParticleCount(unsigned int _particleCount);
 	void SetMaterial(std::shared_ptr<Material> _material);
 
+	// Whether particle emitter is drawn and updated
+	bool active;
+
 private:
 	void UpdateParticle(float _totalTime, int index);
 	void EmitParticle(float _totalTime);
