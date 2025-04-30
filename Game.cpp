@@ -388,6 +388,30 @@ void Game::CreateParticleEmitters()
 	particleEmitters.push_back(peDots);
 }
 
+void Game::CreateFoliage()
+{
+	FoliageParams fParams = {};
+	fParams.seed						= 12345678;
+	fParams.growthDirection				= XMFLOAT3(0.0f, 1.0f, 0.0f);
+	fParams.maxIterations				= 15;
+	fParams.segmentLength				= 3.0f;
+	fParams.segmentLengthVariance		= 0.2f;
+	fParams.segmentLengthMultiplier		= 0.9f;
+	fParams.segmentWidth				= 1.0f;
+	fParams.segmentWidthVariance		= 0.05f;
+	fParams.segmentWidthMultiplier		= 0.9f;
+	fParams.segmentTurnAngleVariance	= 0.05f;
+	fParams.segmentTwistAngleVariance	= 0.5f;
+	fParams.segmentCost					= 0.2f;
+	fParams.segmentCost					= 0.05f;
+	fParams.splitChance					= 0.5f;
+	fParams.splitChanceMultiplier		= 1.1f;
+	fParams.splitAngle					= 0.25f;
+	fParams.splitAngleVariance			= 0.2f;
+	auto fTree = make_shared<Foliage>("F_Tree", materials[13], materials[14], fParams);
+	foliages.push_back(fTree);
+}
+
 // --------------------------------------------------------
 // Handle resizing to match the new window size
 //  - Eventually, we'll want to update our 3D camera
