@@ -1,5 +1,7 @@
 #include "Foliage.h"
 
+#include <stack>
+
 using namespace std;
 using namespace DirectX;
 
@@ -11,19 +13,11 @@ Foliage::Foliage(const char* _name, std::shared_ptr<Material> _branchMaterial, s
 	params = _params;
 	transform = _transform;
 
-	GenerateMesh();
+	GenerateBranchMesh();
 }
 
-Foliage::Foliage(const char* _name, std::shared_ptr<Material> _branchMaterial, std::shared_ptr<Material> _leafMaterial, FoliageParams _params)
-{
-	name = _name;
-	branchMaterial = _branchMaterial;
-	leafMaterial = _leafMaterial;
-	params = _params;
-	transform = make_shared<Transform>();
-	
-	GenerateMesh();
-}
+Foliage::Foliage(const char* _name, std::shared_ptr<Material> _branchMaterial, std::shared_ptr<Material> _leafMaterial, FoliageParams _params) :
+	Foliage(_name, _branchMaterial, _leafMaterial, _params, make_shared<Transform>()) {}
 
 Foliage::~Foliage()
 {
@@ -64,11 +58,31 @@ void Foliage::SetLeafMaterial(std::shared_ptr<Material> _material)
 	leafMaterial = _material;
 }
 
-void Foliage::RegenerateMesh()
+void Foliage::GenerateBranchMesh()
 {
-}
+	vector<Vertex> vertices;	// Generated vertices
+	vector<UINT> indices;		// Generated indices
+	int vertexCounter = 0;		// Counter for vertices
+	int indexCounter = 0;		// Counter for indices
 
-void Foliage::GenerateMesh()
-{
-	
+	stack<FoliageNode> nodesToBuild;	// Stores the nodes in the list that can are still valid to build off of
+
+	// Normalize growth direction
+	XMFLOAT3 growthDirection;
+	XMStoreFloat3(&growthDirection, XMVector3Normalize(XMLoadFloat3(&params.growthDirection)));
+
+	// Create root node
+	nodes.push_back({
+		DirectX::XMFLOAT4X4(
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		),
+		0,
+		0,
+		0.0f
+	});
+
+
 }

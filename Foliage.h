@@ -53,9 +53,11 @@ RELATIVE TRANSLATION AXES		RELATIVE ROTATION AXES
 */
 
 struct FoliageNode {
-	DirectX::XMFLOAT3 position;			// Position of node in object space
-	DirectX::XMFLOAT3 normal;			// Normal vector of the segment's cross-section at this node
+	DirectX::XMFLOAT4X4 tfLocal;		// The local transformation of this node from the root
 	unsigned int iteration;				// How many nodes away from the root node this is
+	unsigned int firstVertexIndex;		// The index, in the Mesh's vertex array,
+										// of the first vertex created by this node
+	float totalCost;					// The total cost accumulated by this node and its ancestors
 };
 
 
@@ -79,8 +81,6 @@ public:
 	void SetBranchMaterial(std::shared_ptr<Material> _material);
 	void SetLeafMaterial(std::shared_ptr<Material> _material);
 
-	void RegenerateMesh();
-
 private:
 	// User-defined fields
 	std::shared_ptr<Mesh> mesh;
@@ -94,7 +94,13 @@ private:
 
 	// Internal data
 	std::vector<FoliageNode> nodes;
+	unsigned int nodeCount;
 
-	void GenerateMesh();
+	// Generates new nodes and a new mesh for branches from the parameters
+	void GenerateBranchMesh();
+	
+	// HELPER FUNCTIONS FOR MESH GENERATION ONLY
+	// Adds a new set of four vertices at the end of a segment to the mesh
+	void AddNodeVertices();
 };
 

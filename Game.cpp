@@ -283,7 +283,7 @@ void Game::CreateGeometry()
 	AddEntity("E_ObjectFloor",			2, 5, XMFLOAT3(-3.0f,  0.0f, 0.0f));
 	AddEntity("E_ObjectPaint",			3, 6, XMFLOAT3( 0.0f, -1.0f, 0.0f));
 	AddEntity("E_ObjectRough",			4, 7, XMFLOAT3( 3.0f, -1.0f, 0.0f));
-	AddEntity("E_ObjectScratched",		5, 8, XMFLOAT3( 6.0f,  0.0f, 0.0f));
+	AddEntity("E_ObjectScratched",		5, 1, XMFLOAT3( 6.0f,  0.0f, 0.0f));
 	AddEntity("E_ObjectWood",			6, 9, XMFLOAT3( 9.0f,  0.0f, 0.0f));
 
 	// ENTITY 7-9
@@ -520,6 +520,15 @@ void Game::Draw(float deltaTime, float totalTime)
 		entities[i]->GetMesh()->Draw();
 	}
 
+	// Draw all foliages
+	for (int i = 0; i < foliages.size(); i++) {
+		vsShadowMap->SetMatrix4x4("world", foliages[i]->GetTransform()->GetWorld());
+		vsShadowMap->CopyAllBufferData();
+
+		// Draw the entity's mesh
+		foliages[i]->GetMesh()->Draw();
+	}
+
 	// Reset viewport, render target, depth buffer, and rasterizer state for normal rendering
 	viewport.Width = (float)Window::Width();
 	viewport.Height = (float)Window::Height();
@@ -621,6 +630,66 @@ void Game::Draw(float deltaTime, float totalTime)
 		// COPY DATA TO CONSTANT BUFFERS
 		vs->CopyAllBufferData();
 		ps->CopyAllBufferData();
+
+		// Draw the entity's mesh
+		entities[i]->GetMesh()->Draw();
+	}
+
+	// Loop through every foliage and draw it
+	for (int i = 0; i < foliages.size(); i++) {
+		// BRANCHES
+
+		// Get branch material
+		std::shared_ptr<Material> matBranch = foliages[i]->GetBranchMaterial();
+		// Prepare the material for drawing
+		matBranch->PrepareMaterial();
+
+		// Get branch material's shaders
+		std::shared_ptr<SimpleVertexShader> vsBranch = matBranch->GetVertexShader();
+		std::shared_ptr<SimplePixelShader> psBranch = matBranch->GetPixelShader();
+
+		// Set vertex and pixel shaders as active
+		vsBranch->SetShader();
+		psBranch->SetShader();
+
+		// Fill constant buffers with foliage's data
+		// VERTEX
+		vsBranch->SetMatrix4x4("tfWorld", entities[i]->GetTransform()->GetWorld());
+		vsBranch->SetMatrix4x4("tfView", cameras[pCameraCurrent]->GetViewMatrix());
+		vsBranch->SetMatrix4x4("tfProjection", cameras[pCameraCurrent]->GetProjectionMatrix());
+		vsBranch->SetMatrix4x4("tfWorldIT", entities[i]->GetTransform()->GetWorldInverseTranspose());
+		vsBranch->SetMatrix4x4("tfShadowView", shadowLightViewMatrix);
+		vsBranch->SetMatrix4x4("tfShadowProjection", shadowLightProjectionMatrix);
+		// PIXEL
+		psBranch->SetFloat4("colorTint", matBranch->GetColorTint());
+		psBranch->SetFloat("roughness", matBranch->GetRoughness());
+		psBranch->SetFloat3("cameraPosition", cameras[pCameraCurrent]->GetTransform()->GetPosition());
+
+		psBranch->SetFloat2("uvPosition", matBranch->GetUVPosition());
+		psBranch->SetFloat2("uvScale", matBranch->GetUVScale());
+
+		// Set lights on pixel shader
+		psBranch->SetData("lights", &lights[0], sizeof(Light) * (int)lights.size());
+		// MATERIAL-SPECIFIC PIXEL SHADER CONSTANT BUFFER INPUTS
+		if (matBranch->GetName() == "Mat_Custom") {
+			psBranch->SetFloat("totalTime", totalTime);
+			psBranch->SetFloat2("imageCenter", pMatCustomImage);
+			psBranch->SetFloat2("zoomCenter", pMatCustomZoom);
+			psBranch->SetInt("maxIterations", pMatCustomIterations);
+		}
+
+		if (matBranch->isPBR) {
+			// Only use metalness for PBR materials
+			psBranch->SetFloat("metalness", matBranch->GetMetalness());
+		}
+		else {
+			// Only use ambient light for non-PBR materials
+			psBranch->SetFloat3("lightAmbient", skyboxAmbientColors[pSkyboxCurrent]);
+		}
+
+		// COPY DATA TO CONSTANT BUFFERS
+		vsBranch->CopyAllBufferData();
+		psBranch->CopyAllBufferData();
 
 		// Draw the entity's mesh
 		entities[i]->GetMesh()->Draw();
