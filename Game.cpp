@@ -655,10 +655,10 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// Fill constant buffers with foliage's data
 		// VERTEX
-		vsBranch->SetMatrix4x4("tfWorld", entities[i]->GetTransform()->GetWorld());
+		vsBranch->SetMatrix4x4("tfWorld", foliages[i]->GetTransform()->GetWorld());
 		vsBranch->SetMatrix4x4("tfView", cameras[pCameraCurrent]->GetViewMatrix());
 		vsBranch->SetMatrix4x4("tfProjection", cameras[pCameraCurrent]->GetProjectionMatrix());
-		vsBranch->SetMatrix4x4("tfWorldIT", entities[i]->GetTransform()->GetWorldInverseTranspose());
+		vsBranch->SetMatrix4x4("tfWorldIT", foliages[i]->GetTransform()->GetWorldInverseTranspose());
 		vsBranch->SetMatrix4x4("tfShadowView", shadowLightViewMatrix);
 		vsBranch->SetMatrix4x4("tfShadowProjection", shadowLightProjectionMatrix);
 		// PIXEL
@@ -2077,6 +2077,27 @@ void Game::ImGuiBuild() {
 			if (ImGui::TreeNode("", "(%06d) %s", i, foliages[i]->GetName())) {
 				ImGui::Text("Branch Material: %s", foliages[i]->GetBranchMaterial()->GetName());
 				ImGui::Text("Leaf Material:   %s", foliages[i]->GetLeafMaterial()->GetName());
+				ImGui::Spacing();
+
+				// Get position, rotation, scale, and tint
+				XMFLOAT3 foliagePos = foliages[i]->GetTransform()->GetPosition();
+				XMFLOAT3 foliageRot = foliages[i]->GetTransform()->GetRotation();
+				XMFLOAT3 foliageSca = foliages[i]->GetTransform()->GetScale();
+
+				if (ImGui::DragFloat3("Position", &foliagePos.x, 0.01f)) {
+					foliages[i]->GetTransform()->SetPosition(foliagePos);
+				}
+				if (ImGui::DragFloat3("Rotation", &foliageRot.x, 0.01f)) {
+					foliages[i]->GetTransform()->SetRotation(foliageRot);
+				}
+				ImGui::SetItemTooltip("In radians");
+				if (ImGui::DragFloat3("Scale", &foliageSca.x, 0.01f, 0.0f)) {
+					foliages[i]->GetTransform()->SetScale(foliageSca);
+				}
+				// Clamp scale to 0
+				if (foliageSca.x < 0.0f) foliageSca.x = 0.0f;
+				if (foliageSca.y < 0.0f) foliageSca.y = 0.0f;
+				if (foliageSca.z < 0.0f) foliageSca.z = 0.0f;
 				ImGui::Spacing();
 
 				// Get parameters

@@ -168,11 +168,8 @@ void Foliage::GenerateBranchMesh()
 	nodes.push_back(root);
 
 	AddNodeQuadVertices(&vertices, &vertexCount, &indices, &indexCount, root);
-	
-	Vertex* finalVertices = (Vertex*)&vertices;
-	Vertex* finalIndices = (Vertex*)&indices;
 
-	//mesh = make_shared<Mesh>("M_Foliage_Generated", finalVertices, vertexCount, finalIndices, indexCount);
+	mesh = make_shared<Mesh>("M_Foliage_Generated", vertices.data(), vertexCount, indices.data(), indexCount);
 }
 
 void Foliage::AddNodeRingVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node)
