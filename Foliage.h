@@ -9,6 +9,37 @@
 #include "Material.h"
 #include "Mesh.h"
 
+
+
+/*
+RELATIVE TRANSLATION AXES		RELATIVE ROTATION AXES
+								(rotated about each axis)
+
+			Y                             Yaw
+		Z  /                         Roll /
+		 \/___ X                        \/___ Pitch
+
+	_____                          _____
+   /\____\                        /\____\
+  / /    /                       / /    /
+ / /    /                       / /    /
+/ /    /                       / /    /
+*/
+
+/*
+SPLIT GENERATION VERTEX NAMES
+
+		   .  Top  .
+		.   .  |  / ..
+		 .   \ V / // .
+		  \   \./ // /
+		   \.___../ /
+  Bottom-> /\.____./
+		  / /    /
+		 / /    /
+		/ /    /
+*/
+
 struct FoliageParams {
 	unsigned int seed;					// Random seed
 	DirectX::XMFLOAT3 growthDirection;	// Vector of starting trunk
@@ -37,21 +68,6 @@ struct FoliageParams {
 	//DirectX::XMFLOAT3 gravity;		// Vector added to the angle of each branch
 };
 
-/*
-RELATIVE TRANSLATION AXES		RELATIVE ROTATION AXES
-								(rotated about each axis)
-
-            Y                             Yaw
-        Z  /                         Roll /
-         \/___ X                        \/___ Pitch
-
-	_____                          _____
-   /\____\                        /\____\
-  / /    /                       / /    /
- / /    /                       / /    /
-/ /    /                       / /    /
-*/
-
 struct FoliageNode {
 	DirectX::XMFLOAT4X4 tfLocal;		// The local transformation of this node from the root
 	unsigned int iteration;				// How many nodes away from the root node this is
@@ -59,8 +75,12 @@ struct FoliageNode {
 										// of the first vertex created by this node
 	unsigned int indicesStart;			// The index, in the Mesh's index array,
 										// of the first vertex created by this node
+	float width;						// The width the ring around this node should be
+	float nextSegmentLength;			// The length the segment built on this node should be
 	float totalCost;					// The total cost accumulated by this node and its ancestors
 };
+
+
 
 
 
@@ -105,44 +125,138 @@ private:
 	void GenerateBranchMesh();
 	
 	// HELPER FUNCTIONS FOR MESH GENERATION ONLY
+	void TransformVectorByMatrix(
+		DirectX::XMFLOAT3* _vector, 
+		DirectX::XMFLOAT4X4 _matrix
+	);
+	void ScaleAndTransformVectorByMatrix(
+		DirectX::XMFLOAT3* _vector, 
+		DirectX::XMFLOAT4X4 _matrix, 
+		float _scale
+	);
+	// Extends a new node off a given previous node
+	FoliageNode BuildNodeFromParent(
+		const FoliageNode& _parent, 
+		unsigned int* _vertexCount, 
+		unsigned int* _indexCount
+	);
+	// Adds a new quad of four vertices to the mesh, centered around a Node, and the necessary indices for it
+	void AddNodeQuadVertices(
+		std::vector<Vertex>* _vertices,
+		unsigned int* _vertexCount,
+		std::vector<UINT>* _indices,
+		unsigned int* _indexCount,
+		const FoliageNode& _node
+	);
 	// Adds a new ring of four vertices to the mesh, centered around a Node (Doesn't add indices yet)
-	void AddNodeRingVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node);
-	// Adds a new quad of four vertices to the mesh, centered around a Node (Doesn't add indices yet)
-	void AddNodeQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node);
-	void TransformVectorByMatrix(DirectX::XMFLOAT3* _vector, DirectX::XMFLOAT4X4 _matrix);
-
+	void AddNodeRingVerticesHardEdge(
+		std::vector<Vertex>* _vertices,
+		unsigned int* _vertexCount,
+		const FoliageNode& _node
+	);
+	// Adds indices for the eight triangles in the segment between two Nodes
+	void AddSegmentIndicesHardEdge(
+		std::vector<Vertex>* _vertices,
+		unsigned int* _vertexCount,
+		std::vector<UINT>* _indices,
+		unsigned int* _indexCount,
+		unsigned int _parentNodeFirstVertex,
+		unsigned int _childNodeFirstVertex
+	);
 
 
 	// CONSTANTS FOR MESH GENERATION
 
-	// Constant quad vertices to copy to make new quads/rings
-	const Vertex QUAD_V1 = {
+	// Constant quad vertices to copy to make new quads
+	/*
+	 0---1
+	 |   |
+	 2---3
+	*/
+	const Vertex QUAD_V0 = {
 		DirectX::XMFLOAT3(-0.5f, 0.0f, 0.5f),	// Position
 		DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),	// Normal
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),	// Tangent (will be calculated automatically)
 		DirectX::XMFLOAT2(0.0f, 0.0f)			// UV
 	};
-	const Vertex QUAD_V2 = {
+	const Vertex QUAD_V1 = {
 		DirectX::XMFLOAT3(0.5f, 0.0f, 0.5f),
 		DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
 		DirectX::XMFLOAT2(1.0f, 0.0f)
 	};
-	const Vertex QUAD_V3 = {
+	const Vertex QUAD_V2 = {
 		DirectX::XMFLOAT3(-0.5f, 0.0f, -0.5f),
 		DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
 		DirectX::XMFLOAT2(0.0f, 1.0f)
 	};
-	const Vertex QUAD_V4 = {
+	const Vertex QUAD_V3 = {
 		DirectX::XMFLOAT3(0.5f, 0.0f, -0.5f),
 		DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
 		DirectX::XMFLOAT2(1.0f, 1.0f)
 	};
 	// Indices for making a new quad
-	const unsigned int QUAD_INDICES[6] = {1, 2, 0, 1, 3, 2};
-	// Indices for making a new quad on the long side of a segment
-	const unsigned int SEGMENT_QUAD_INDICES[6] = { 4, 1, 5, 4, 0, 1 };
+	const unsigned int QUAD_INDICES[6] = { 1, 2, 0, 1, 3, 2 };
+
+
+
+	// Constant ring vertices to copy to make new rings
+	/*
+	 0---3
+	 |   |
+	 1---2
+	*/
+	const Vertex RING_V0TO3 = {
+		DirectX::XMFLOAT3(-0.5f, 0.0f, 0.5f),	// Position
+		DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),	// Normal
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),	// Tangent (will be calculated automatically)
+		DirectX::XMFLOAT2(1.0f, 0.0f)			// UV
+	};
+	const Vertex RING_V0TO1 = {
+		DirectX::XMFLOAT3(-0.5f, 0.0f, 0.5f),
+		DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(0.0f, 0.0f)
+	};
+	const Vertex RING_V1TO0 = {
+		DirectX::XMFLOAT3(-0.5f, 0.0f, -0.5f),
+		DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(0.25f, 0.0f)
+	};
+	const Vertex RING_V1TO2 = {
+		DirectX::XMFLOAT3(-0.5f, 0.0f, -0.5f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(0.25f, 0.0f)
+	};
+	const Vertex RING_V2TO1 = {
+		DirectX::XMFLOAT3(0.5f, 0.0f, -0.5f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(0.5f, 0.0f)
+	};
+	const Vertex RING_V2TO3 = {
+		DirectX::XMFLOAT3(0.5f, 0.0f, -0.5f),
+		DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(0.5f, 0.0f)
+	};
+	const Vertex RING_V3TO2 = {
+		DirectX::XMFLOAT3(0.5f, 0.0f, 0.5f),
+		DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(0.75f, 0.0f)
+	};
+	const Vertex RING_V3TO0 = {
+		DirectX::XMFLOAT3(0.5f, 0.0f, 0.5f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(0.75f, 0.0f)
+	};
+	// Indices for making a new quad between two rings
+	const unsigned int SEGMENT_FACE_INDICES[6] = { 3, 0, 2, 3, 1, 0 };
 };
 

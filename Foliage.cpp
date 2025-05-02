@@ -147,6 +147,8 @@ void Foliage::GenerateBranchMesh()
 		0,
 		0,
 		0,
+		params.segmentWidth,
+		params.segmentLength,
 		0.0f
 	};
 	
@@ -160,43 +162,155 @@ void Foliage::GenerateBranchMesh()
 	}
 	indexCount += 6;
 
+
+
+	// Add first ring, then ring above it
+	AddNodeRingVerticesHardEdge(&vertices, &vertexCount, root);
+	FoliageNode second = BuildNodeFromParent(root, &vertexCount, &indexCount);
+	AddNodeRingVerticesHardEdge(&vertices, &vertexCount, second);
+
+	// Connect the two rings by adding indices
+	AddSegmentIndicesHardEdge(
+		&vertices,
+		&vertexCount,
+		&indices,
+		&indexCount,
+		root.verticesStart,
+		second.verticesStart
+	);
+
+	// FINAL STEP: Make Mesh object
 	mesh = make_shared<Mesh>("M_Foliage_Generated", vertices.data(), vertexCount, indices.data(), indexCount);
-}
-
-void Foliage::AddNodeRingVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node)
-{
-}
-
-void Foliage::AddNodeQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node)
-{
-	// Get new quad vertices
-	Vertex v1 = QUAD_V1;
-	Vertex v2 = QUAD_V2;
-	Vertex v3 = QUAD_V3;
-	Vertex v4 = QUAD_V4;
-
-	// Transform all vertices' positions and normals by the vector
-	// (there's probably a more efficient way to do this)
-	TransformVectorByMatrix(&v1.Position, _node.tfLocal);
-	TransformVectorByMatrix(&v2.Position, _node.tfLocal);
-	TransformVectorByMatrix(&v3.Position, _node.tfLocal);
-	TransformVectorByMatrix(&v4.Position, _node.tfLocal);
-	TransformVectorByMatrix(&v1.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v2.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v3.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v4.Normal, _node.tfLocal);
-
-	// Add vertices to vertex vector and add 4 to vertexCount
-	_vertices->push_back(v1);
-	_vertices->push_back(v2);
-	_vertices->push_back(v3);
-	_vertices->push_back(v4);
-	*_vertexCount += 4;
 }
 
 void Foliage::TransformVectorByMatrix(DirectX::XMFLOAT3* _vector, DirectX::XMFLOAT4X4 _matrix)
 {
 	XMStoreFloat3(_vector, XMVector3Transform(XMLoadFloat3(_vector), XMLoadFloat4x4(&_matrix)));
+}
+
+void Foliage::ScaleAndTransformVectorByMatrix(DirectX::XMFLOAT3* _vector, DirectX::XMFLOAT4X4 _matrix, float _scale)
+{
+	XMStoreFloat3(_vector, XMVector3Transform(
+		XMVectorScale(XMLoadFloat3(_vector), _scale),
+		XMLoadFloat4x4(&_matrix)));
+}
+
+FoliageNode Foliage::BuildNodeFromParent(const FoliageNode& _parent, unsigned int* _vertexCount, unsigned int* _indexCount)
+{
+	FoliageNode result = _parent;
+
+	// Get growth direction from parent's up vector
+	XMFLOAT3 growthDirection(
+		result.tfLocal._21,
+		result.tfLocal._22,
+		result.tfLocal._23
+	);
+	// Scale growth direction by segment length and translate by that vector
+	XMStoreFloat4x4(&result.tfLocal, XMMatrixMultiply(
+		XMMatrixTranslationFromVector(XMVectorScale(XMLoadFloat3(&growthDirection), result.nextSegmentLength)),
+		XMLoadFloat4x4(&result.tfLocal)
+	));
+
+	// Update other fields
+	result.iteration++;
+	result.verticesStart = *_vertexCount;
+	result.indicesStart = *_indexCount;
+
+	result.totalCost += params.segmentCost;
+
+	return result;
+}
+
+
+void Foliage::AddNodeQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node)
+{
+	// Get new quad vertices
+	Vertex v0 = QUAD_V0;
+	Vertex v1 = QUAD_V1;
+	Vertex v2 = QUAD_V2;
+	Vertex v3 = QUAD_V3;
+
+	// Transform all vertices' positions and normals by the vector
+	// (there's probably a more efficient way to do this)
+	TransformVectorByMatrix(&v0.Position, _node.tfLocal);
+	TransformVectorByMatrix(&v1.Position, _node.tfLocal);
+	TransformVectorByMatrix(&v2.Position, _node.tfLocal);
+	TransformVectorByMatrix(&v3.Position, _node.tfLocal);
+	TransformVectorByMatrix(&v0.Normal, _node.tfLocal);
+	TransformVectorByMatrix(&v1.Normal, _node.tfLocal);
+	TransformVectorByMatrix(&v2.Normal, _node.tfLocal);
+	TransformVectorByMatrix(&v3.Normal, _node.tfLocal);
+
+	// Add vertices to vertex vector and add 4 to vertexCount
+	_vertices->push_back(v0);
+	_vertices->push_back(v1);
+	_vertices->push_back(v2);
+	_vertices->push_back(v3);
+	*_vertexCount += 4;
+}
+
+void Foliage::AddNodeRingVerticesHardEdge(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, const FoliageNode& _node)
+{
+	// Get new quad vertices
+	Vertex v0to1 = RING_V0TO1;
+	Vertex v1to0 = RING_V1TO0;
+	Vertex v1to2 = RING_V1TO2;
+	Vertex v2to1 = RING_V2TO1;
+	Vertex v2to3 = RING_V2TO3;
+	Vertex v3to2 = RING_V3TO2;
+	Vertex v3to0 = RING_V3TO0;
+	Vertex v0to3 = RING_V0TO3;
+
+	// Transform all vertices' positions and normals by the vector,
+	// Scaling the ring vertices' position by the node's width first
+	ScaleAndTransformVectorByMatrix(&v0to1.Position, _node.tfLocal, _node.width);
+	ScaleAndTransformVectorByMatrix(&v1to0.Position, _node.tfLocal, _node.width);
+	ScaleAndTransformVectorByMatrix(&v1to2.Position, _node.tfLocal, _node.width);
+	ScaleAndTransformVectorByMatrix(&v2to1.Position, _node.tfLocal, _node.width);
+	ScaleAndTransformVectorByMatrix(&v2to3.Position, _node.tfLocal, _node.width);
+	ScaleAndTransformVectorByMatrix(&v3to2.Position, _node.tfLocal, _node.width);
+	ScaleAndTransformVectorByMatrix(&v3to0.Position, _node.tfLocal, _node.width);
+	ScaleAndTransformVectorByMatrix(&v0to3.Position, _node.tfLocal, _node.width);
+	TransformVectorByMatrix(&v0to1.Normal, _node.tfLocal);
+	TransformVectorByMatrix(&v1to0.Normal, _node.tfLocal);
+	TransformVectorByMatrix(&v1to2.Normal, _node.tfLocal);
+	TransformVectorByMatrix(&v2to1.Normal, _node.tfLocal);
+	TransformVectorByMatrix(&v2to3.Normal, _node.tfLocal);
+	TransformVectorByMatrix(&v3to2.Normal, _node.tfLocal);
+	TransformVectorByMatrix(&v3to0.Normal, _node.tfLocal);
+	TransformVectorByMatrix(&v0to3.Normal, _node.tfLocal);
+
+	// Add vertices to vertex vector and add 4 to vertexCount
+	_vertices->push_back(v0to1);
+	_vertices->push_back(v1to0);
+	_vertices->push_back(v1to2);
+	_vertices->push_back(v2to1);
+	_vertices->push_back(v2to3);
+	_vertices->push_back(v3to2);
+	_vertices->push_back(v3to0);
+	_vertices->push_back(v0to3);
+	*_vertexCount += 8;
+}
+
+void Foliage::AddSegmentIndicesHardEdge(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, unsigned int _parentNodeFirstVertex, unsigned int _childNodeFirstVertex)
+{
+	// Loop through each index of each face
+	for (unsigned int face = 0; face < 4; face++) {
+		for (unsigned int index = 0; index < 6; index++) {
+			// Get index from constant array
+			unsigned int ringQuadIndex = SEGMENT_FACE_INDICES[index];
+			_indices->push_back(ringQuadIndex < 2 ? 
+				// If index is 0 or 1 (i.e. on the parent's ring),
+				// offset by 2 per face, get the parent's start vertex, and add the known index
+				(face * 2) + _parentNodeFirstVertex + ringQuadIndex :
+				// If index is 2 or 3 (i.e. on the child's ring),
+				// offset by 2 per face, get the child's start vertex, and add the known index
+				// (minus the two used to indicate this is the )
+				(face * 2) + _childNodeFirstVertex + ringQuadIndex - 2
+			);
+		}
+	}
+	*_indexCount += 24;
 }
 
 
