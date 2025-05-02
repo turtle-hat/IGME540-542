@@ -42,6 +42,7 @@ void Game::Initialize()
 	CreateSkyboxes();
 	BuildParticleResources();
 	CreateParticleEmitters();
+	CreateFoliage();
 	BuildPostProcesses();
 
 	// Set initial graphics API state
@@ -392,7 +393,7 @@ void Game::CreateFoliage()
 {
 	FoliageParams fParams = {};
 	fParams.seed						= 12345678;
-	fParams.growthDirection				= XMFLOAT3(0.0f, 1.0f, 0.0f);
+	fParams.growthDirection				= XMFLOAT3(2.0f, 3.0f, 0.0f);
 	fParams.maxIterations				= 15;
 	fParams.segmentLength				= 3.0f;
 	fParams.segmentLengthVariance		= 0.2f;
@@ -692,7 +693,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		psBranch->CopyAllBufferData();
 
 		// Draw the entity's mesh
-		entities[i]->GetMesh()->Draw();
+		foliages[i]->GetMesh()->Draw();
 	}
 
 	// Draw the selected skybox
@@ -2051,6 +2052,54 @@ void Game::ImGuiBuild() {
 							ImVec2(uv_pos.x + uv_sca.x, uv_pos.y + uv_sca.y)
 						);
 					}
+				}
+
+				ImGui::TreePop();
+				ImGui::Spacing();
+			}
+
+			ImGui::PopID();
+			ImGui::Spacing();
+		}
+		ImGui::PopID();
+
+		ImGui::Spacing();
+	}
+
+	if (ImGui::CollapsingHeader("Foliage")) {					// Info about each foliage system
+		ImGui::Spacing();
+
+		ImGui::PushID("FOLIAGE");
+
+		for (int i = 0; i < foliages.size(); i++) {
+			// Each foliage gets its own Tree Node
+			ImGui::PushID(i);
+			if (ImGui::TreeNode("", "(%06d) %s", i, foliages[i]->GetName())) {
+				ImGui::Text("Branch Material: %s", foliages[i]->GetBranchMaterial()->GetName());
+				ImGui::Text("Leaf Material:   %s", foliages[i]->GetLeafMaterial()->GetName());
+				ImGui::Spacing();
+
+				// Get parameters
+				FoliageParams params = foliages[i]->GetParams();
+				bool paramsDirty = false;
+
+				FoliageNode root = foliages[i]->GetRootNode();
+				XMFLOAT4X4 rootTF = root.tfLocal;
+
+				ImGui::Text("Root Node Transform Matrix:");
+				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", rootTF._11, rootTF._12, rootTF._13, rootTF._14);
+				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", rootTF._21, rootTF._22, rootTF._23, rootTF._24);
+				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", rootTF._31, rootTF._32, rootTF._33, rootTF._34);
+				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", rootTF._41, rootTF._42, rootTF._43, rootTF._44);
+				ImGui::Spacing();
+
+				if (ImGui::DragFloat3("Growth Direction", &params.growthDirection.x, 0.01f)) {
+					paramsDirty = true;
+				}
+
+				// If the user has changed any parameters, set them
+				if (paramsDirty) {
+					foliages[i]->SetParams(params);
 				}
 
 				ImGui::TreePop();
