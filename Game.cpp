@@ -393,7 +393,7 @@ void Game::CreateFoliage()
 {
 	FoliageParams fParams = {};
 	fParams.seed						= 12345678;
-	fParams.growthDirection				= XMFLOAT3(2.0f, 3.0f, 0.0f);
+	fParams.growthDirection				= XMFLOAT3(0.0f, 1.0f, 0.0f);
 	fParams.maxIterations				= 15;
 	fParams.segmentLength				= 3.0f;
 	fParams.segmentLengthVariance		= 0.2f;

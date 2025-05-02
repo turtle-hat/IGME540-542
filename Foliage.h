@@ -140,6 +140,6 @@ private:
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
 		DirectX::XMFLOAT2(1.0f, 1.0f)
 	};
-	const unsigned int QUAD_INDICES[6] = {2, 3, 1, 2, 4, 3};
+	const unsigned int QUAD_INDICES[6] = {1, 2, 0, 1, 3, 2};
 };
 
