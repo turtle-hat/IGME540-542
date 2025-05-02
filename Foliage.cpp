@@ -104,15 +104,22 @@ void Foliage::GenerateBranchMesh()
 
 	// Then, determine what the second and third bases should be
 
-	// Use whichever axis (Z or X) has the lowest component as second basis
-	// and orthonormalize it with the up vector;
-	// then calculate the other.
-	if (abs(rootUp.z) <= abs(rootUp.x)) {
+	// If there is no X component, use (1, 0, 0) as the second basis
+	// and calculate the third from a cross product
+	if (abs(rootUp.x) == 0.0f) {
+		// Calculate forward basis as the cross product of the other two and store
+		XMStoreFloat3(&rootForward, XMVector3Cross(
+			XMLoadFloat3(&rootRight),
+			vecRootUp
+		));
+	}
+	// Otherwise, use (0, 0, 1) as the second basis
+	else {
 		// XMVECTOR of the forward vector
 		XMVECTOR vecRootForward = XMLoadFloat3(&rootForward);
 
-		// If there is a z component originally, orthonormalize it to ensure
-		// the forward basis is orthogonal to the up vector
+		// If there is a z component to the up vector, orthonormalize the forward basis
+		// to make it orthogonal to the up vector
 		if (abs(rootUp.z) > 0.0f) {
 			// Gram-Schmidt orthonormalize
 			vecRootForward = XMVector3Normalize(
@@ -127,28 +134,6 @@ void Foliage::GenerateBranchMesh()
 			vecRootUp,
 			vecRootForward
 		));
-	}
-	else {
-		// XMVECTOR of the right vector
-		XMVECTOR vecRootRight = XMLoadFloat3(&rootRight);
-
-		// If there is an x component originally, orthonormalize it to ensure
-		// the right basis is orthogonal to the up vector
-		if (abs(rootUp.x) > 0.0f) {
-			// Gram-Schmidt orthonormalize
-			vecRootRight = XMVector3Normalize(
-				vecRootRight - vecRootUp * XMVector3Dot(vecRootUp, vecRootRight));
-			
-			// Store right basis
-			XMStoreFloat3(&rootRight, vecRootRight);
-		}
-
-		XMVECTOR cross = XMVector3Cross(
-			vecRootRight,
-			vecRootUp
-		);
-		// Calculate forward basis as the cross product of the other two and store
-		XMStoreFloat3(&rootForward, cross);
 	}
 
 	// Create root node
