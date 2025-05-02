@@ -140,6 +140,9 @@ private:
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
 		DirectX::XMFLOAT2(1.0f, 1.0f)
 	};
+	// Indices for making a new quad
 	const unsigned int QUAD_INDICES[6] = {1, 2, 0, 1, 3, 2};
+	// Indices for making a new quad on the long side of a segment
+	const unsigned int SEGMENT_QUAD_INDICES[6] = { 4, 1, 5, 4, 0, 1 };
 };
 

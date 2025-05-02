@@ -154,6 +154,12 @@ void Foliage::GenerateBranchMesh()
 
 	AddNodeQuadVertices(&vertices, &vertexCount, &indices, &indexCount, root);
 
+	// Add indices of the quad to the index vector and add 6 to indexCount
+	for (int i = 0; i < 6; i++) {
+		indices.push_back(QUAD_INDICES[i] + indexCount);
+	}
+	indexCount += 6;
+
 	mesh = make_shared<Mesh>("M_Foliage_Generated", vertices.data(), vertexCount, indices.data(), indexCount);
 }
 
@@ -186,12 +192,6 @@ void Foliage::AddNodeQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 	_vertices->push_back(v3);
 	_vertices->push_back(v4);
 	*_vertexCount += 4;
-
-	// Add indices of the quad to the index vector and add 6 to indexCount
-	for (int i = 0; i < 6; i++) {
-		_indices->push_back(QUAD_INDICES[i] + *_indexCount);
-	}
-	*_indexCount += 6;
 }
 
 void Foliage::TransformVectorByMatrix(DirectX::XMFLOAT3* _vector, DirectX::XMFLOAT4X4 _matrix)
