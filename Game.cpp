@@ -2102,88 +2102,107 @@ void Game::ImGuiBuild() {
 				ImGui::Spacing();
 
 				if (ImGui::TreeNode("Parameters")) {
+					ImGui::PushItemWidth(-200.0f);
+
 					// Get parameters
 					FoliageParams params = foliages[i]->GetParams();
 					bool paramsDirty = false;
 
+					ImGui::SetTooltip("Random seed");
 					int seed = params.seed;
 					if (ImGui::InputInt("Seed", &seed, 1, 100)) {
 						params.seed = (unsigned int)max(seed, 0);
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Vector of starting trunk");
 					if (ImGui::DragFloat3("Growth Direction", &params.growthDirection.x, 0.01f, -1.0f, 1.0f, "%.2f")) {
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Caps the amount of segments that can be a part of a single branch");
 					int maxIterations = params.maxIterations;
 					if (ImGui::DragInt("Max Iterations", &maxIterations, 1, 0, 127)) {
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Average length for each branch segment");
 					if (ImGui::DragFloat("Starting Segment Length", &params.segmentLength, 0.01f, 0.0f, NULL, "%.2f")) {
 						params.segmentLengthVariance = min(params.segmentLengthVariance, params.segmentLength);
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Width of random range for segment length");
 					if (ImGui::SliderFloat("Segment Length Variance", &params.segmentLengthVariance, 0.01f, params.segmentLength, "%.2f")) {
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Multiplied to segment length & variance after each segment");
 					if (ImGui::SliderFloat("Segment Length Multiplier", &params.segmentLengthMultiplier, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Average width for each branch segment");
 					if (ImGui::DragFloat("Starting Segment Width", &params.segmentWidth, 0.01f, 0.0f, NULL, "%.2f")) {
 						params.segmentWidthVariance = min(params.segmentWidthVariance, params.segmentWidth);
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Width of random range for segment width");
 					if (ImGui::SliderFloat("Segment Width Variance", &params.segmentWidthVariance, 0.0f, params.segmentWidth, "%.2f")) {
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Multiplied to segment width & variance after each segment");
 					if (ImGui::SliderFloat("Segment Width Multiplier", &params.segmentWidthMultiplier, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Width of random range for angle between segments' long sides,\nas degrees from directly parallel");
 					float segmentTurnAngleVarianceDegrees = params.segmentTurnAngleVariance * XM_1DIVPI * 180.0f;
 					if (ImGui::SliderFloat("Segment Turn Angle Variance", &segmentTurnAngleVarianceDegrees, 0.0f, 180.0f, "%.1f")) {
 						params.segmentTurnAngleVariance = segmentTurnAngleVarianceDegrees * XM_PI / 180.0f;
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Width of random range for angle between segments' cross-sections,\nas degrees from directly aligned");
 					float segmentTwistAngleVarianceDegrees = params.segmentTwistAngleVariance * XM_1DIVPI * 180.0f;
 					if (ImGui::SliderFloat("Segment Twist Angle Variance", &segmentTwistAngleVarianceDegrees, 0.0f, 180.0f, "%.1f")) {
 						params.segmentTwistAngleVariance = segmentTwistAngleVarianceDegrees * XM_PI / 180.0f;
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Value from 0.0f to 1.0f, preferably low. Added to UV coordinates after each segment.\nIf reaches 1.0f or higher, branch terminates.");
 					if (ImGui::SliderFloat("Segment Cost", &params.segmentCost, 0.0f, 1.0f, "%.2f")) {
 						params.segmentCostVariance = min(params.segmentCostVariance, params.segmentCost);
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Width of random range for segment cost");
 					if (ImGui::SliderFloat("Segment Cost Variance", &params.segmentCostVariance, 0.0f, params.segmentCost, "%.2f")) {
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Percent chance that a branch will split");
 					if (ImGui::SliderFloat("Split Chance", &params.splitChance, 0.0f, 1.0f, "%.2f")) {
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Multiplied to split chance after each segment");
 					if (ImGui::SliderFloat("Split Chance Multiplier", &params.splitChanceMultiplier, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("Average angle at which split branches diverge after a split,\nas degrees from directly upwards");
 					float splitAngleDegrees = params.splitAngle * XM_1DIVPI * 180.0f;
-					if (ImGui::SliderFloat("Split Angle", &splitAngleDegrees, 0.0f, 180.0f)) {
+					if (ImGui::SliderFloat("Split Angle", &splitAngleDegrees, 0.0f, 180.0f, "%.1f")) {
 						params.splitAngle = splitAngleDegrees * XM_PI / 180.0f;
 						paramsDirty = true;
 					}
 
+					ImGui::SetTooltip("// Width of random range for split angle");
 					float splitAngleVarianceDegrees = params.splitAngleVariance * XM_1DIVPI * 180.0f;
-					if (ImGui::SliderFloat("Split Angle Variance", &splitAngleVarianceDegrees, 0.0f, 180.0f)) {
+					if (ImGui::SliderFloat("Split Angle Variance", &splitAngleVarianceDegrees, 0.0f, 180.0f, "%.1f")) {
 						params.splitAngleVariance = splitAngleVarianceDegrees * XM_PI / 180.0f;
 						paramsDirty = true;
 					}
@@ -2193,9 +2212,11 @@ void Game::ImGuiBuild() {
 						foliages[i]->SetParams(params);
 					}
 
+					ImGui::PopItemWidth();
+
 					ImGui::TreePop();
-					ImGui::Spacing();
 				}
+				ImGui::Spacing();
 
 				FoliageNode root = foliages[i]->GetRootNode();
 				XMFLOAT4X4 rootTF = root.tfLocal;

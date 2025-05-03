@@ -51,10 +51,10 @@ struct FoliageParams {
 	float segmentWidth;					// Average width for each branch segment
 	float segmentWidthVariance;			// Width of random range for segment width
 	float segmentWidthMultiplier;		// Multiplied to segment width & variance after each segment
-	float segmentTurnAngleVariance;		// Width of random range for angle between segments' long sides
+	float segmentTurnAngleVariance;		// Width of random range for angle between segments' long sides,
 										// as radians from directly parallel
 	float segmentTwistAngleVariance;	// Width of random range for angle between segments' cross-sections,
-										// as radians counterclockwise from directly 
+										// as radians from directly aligned
 
 	float segmentCost;					// Value from 0.0f to 1.0f, preferably low. Added to UV coordinates after each segment.
 										// If reaches 1.0f or higher, branch terminates.
@@ -62,7 +62,8 @@ struct FoliageParams {
 
 	float splitChance;					// Percent chance that a branch will split
 	float splitChanceMultiplier;		// Multiplied to split chance after each segment
-	float splitAngle;					// Average angle at which split branches diverge after a split, as radians from directly upwards
+	float splitAngle;					// Average angle at which split branches diverge after a split,
+										// as radians from directly upwards
 	float splitAngleVariance;			// Width of random range for split angle
 
 	//DirectX::XMFLOAT3 gravity;		// Vector added to the angle of each branch
