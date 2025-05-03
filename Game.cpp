@@ -395,16 +395,15 @@ void Game::CreateFoliage()
 	fParams.seed						= 12345678;
 	fParams.growthDirection				= XMFLOAT3(0.0f, 1.0f, 0.0f);
 	fParams.maxIterations				= 15;
+	fParams.maxLength					= 10.0f;
 	fParams.segmentLength				= 3.0f;
 	fParams.segmentLengthVariance		= 0.2f;
-	fParams.segmentLengthMultiplier		= 0.9f;
+	fParams.segmentLengthMultiplier		= 0.95f;
 	fParams.segmentWidth				= 1.0f;
 	fParams.segmentWidthVariance		= 0.05f;
-	fParams.segmentWidthMultiplier		= 0.9f;
+	fParams.segmentWidthMultiplier		= 0.95f;
 	fParams.segmentTurnAngleVariance	= 0.05f;
 	fParams.segmentTwistAngleVariance	= 0.5f;
-	fParams.segmentCost					= 0.2f;
-	fParams.segmentCost					= 0.05f;
 	fParams.splitChance					= 0.5f;
 	fParams.splitChanceMultiplier		= 1.1f;
 	fParams.splitAngle					= 0.25f;
@@ -2109,7 +2108,7 @@ void Game::ImGuiBuild() {
 					bool paramsDirty = false;
 
 					ImGui::SetTooltip("Random seed");
-					int seed = params.seed;
+					int seed = (int)params.seed;
 					if (ImGui::InputInt("Seed", &seed, 1, 100)) {
 						params.seed = (unsigned int)max(seed, 0);
 						paramsDirty = true;
@@ -2121,8 +2120,14 @@ void Game::ImGuiBuild() {
 					}
 
 					ImGui::SetTooltip("Caps the amount of segments that can be a part of a single branch");
-					int maxIterations = params.maxIterations;
-					if (ImGui::DragInt("Max Iterations", &maxIterations, 1, 0, 127)) {
+					int maxIterations = (int)params.maxIterations;
+					if (ImGui::InputInt("Max Iterations", &maxIterations, 1, 2)) {
+						params.maxIterations = (unsigned int)max(maxIterations, 1);
+						paramsDirty = true;
+					}
+
+					ImGui::SetTooltip("Caps the maximum length branches can grow to");
+					if (ImGui::DragFloat("Max Length", &params.maxLength, 0.01f, 0.0f, NULL, "%.2f")) {
 						paramsDirty = true;
 					}
 
@@ -2138,7 +2143,7 @@ void Game::ImGuiBuild() {
 					}
 
 					ImGui::SetTooltip("Multiplied to segment length & variance after each segment");
-					if (ImGui::SliderFloat("Segment Length Multiplier", &params.segmentLengthMultiplier, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+					if (ImGui::DragFloat("Segment Length Multiplier", &params.segmentLengthMultiplier, 0.01f, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
 						paramsDirty = true;
 					}
 
@@ -2154,7 +2159,7 @@ void Game::ImGuiBuild() {
 					}
 
 					ImGui::SetTooltip("Multiplied to segment width & variance after each segment");
-					if (ImGui::SliderFloat("Segment Width Multiplier", &params.segmentWidthMultiplier, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+					if (ImGui::DragFloat("Segment Width Multiplier", &params.segmentWidthMultiplier, 0.01f, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
 						paramsDirty = true;
 					}
 
@@ -2172,24 +2177,13 @@ void Game::ImGuiBuild() {
 						paramsDirty = true;
 					}
 
-					ImGui::SetTooltip("Value from 0.0f to 1.0f, preferably low. Added to UV coordinates after each segment.\nIf reaches 1.0f or higher, branch terminates.");
-					if (ImGui::SliderFloat("Segment Cost", &params.segmentCost, 0.0f, 1.0f, "%.2f")) {
-						params.segmentCostVariance = min(params.segmentCostVariance, params.segmentCost);
-						paramsDirty = true;
-					}
-
-					ImGui::SetTooltip("Width of random range for segment cost");
-					if (ImGui::SliderFloat("Segment Cost Variance", &params.segmentCostVariance, 0.0f, params.segmentCost, "%.2f")) {
-						paramsDirty = true;
-					}
-
 					ImGui::SetTooltip("Percent chance that a branch will split");
 					if (ImGui::SliderFloat("Split Chance", &params.splitChance, 0.0f, 1.0f, "%.2f")) {
 						paramsDirty = true;
 					}
 
 					ImGui::SetTooltip("Multiplied to split chance after each segment");
-					if (ImGui::SliderFloat("Split Chance Multiplier", &params.splitChanceMultiplier, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+					if (ImGui::DragFloat("Split Chance Multiplier", &params.splitChanceMultiplier, 0.01f, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
 						paramsDirty = true;
 					}
 
@@ -2200,7 +2194,7 @@ void Game::ImGuiBuild() {
 						paramsDirty = true;
 					}
 
-					ImGui::SetTooltip("// Width of random range for split angle");
+					ImGui::SetTooltip("Width of random range for split angle");
 					float splitAngleVarianceDegrees = params.splitAngleVariance * XM_1DIVPI * 180.0f;
 					if (ImGui::SliderFloat("Split Angle Variance", &splitAngleVarianceDegrees, 0.0f, 180.0f, "%.1f")) {
 						params.splitAngleVariance = splitAngleVarianceDegrees * XM_PI / 180.0f;

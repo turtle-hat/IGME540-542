@@ -43,7 +43,8 @@ SPLIT GENERATION VERTEX NAMES
 struct FoliageParams {
 	unsigned int seed;					// Random seed
 	DirectX::XMFLOAT3 growthDirection;	// Vector of starting trunk
-	unsigned int maxIterations;			// Caps the amount of segments that can be a part of a single branch
+	unsigned int maxIterations;			// Caps the number of segments that can be a part of a single branch
+	float maxLength;					// Caps the maximum length branches can grow to
 	
 	float segmentLength;				// Average length for each branch segment
 	float segmentLengthVariance;		// Width of random range for segment length
@@ -55,10 +56,6 @@ struct FoliageParams {
 										// as radians from directly parallel
 	float segmentTwistAngleVariance;	// Width of random range for angle between segments' cross-sections,
 										// as radians from directly aligned
-
-	float segmentCost;					// Value from 0.0f to 1.0f, preferably low. Added to UV coordinates after each segment.
-										// If reaches 1.0f or higher, branch terminates.
-	float segmentCostVariance;			// Width of random range for segment cost
 
 	float splitChance;					// Percent chance that a branch will split
 	float splitChanceMultiplier;		// Multiplied to split chance after each segment
@@ -77,8 +74,8 @@ struct FoliageNode {
 	unsigned int indicesStart;			// The index, in the Mesh's index array,
 										// of the first vertex created by this node
 	float width;						// The width the ring around this node should be
-	float nextSegmentLength;			// The length the segment built on this node should be
-	float totalCost;					// The total cost accumulated by this node and its ancestors
+	float totalLength;					// The total length accumulated by this node and its ancestors
+	bool isFinal;							// Whether this node should be an end cap
 };
 
 
@@ -165,6 +162,21 @@ private:
 		unsigned int _parentNodeFirstVertex,
 		unsigned int _childNodeFirstVertex
 	);
+	// Adds a new end cap of four vertices to the mesh, centered around a Node (Doesn't add indices yet)
+	void AddNodeEndCapVerticesHardEdge(
+		std::vector<Vertex>* _vertices,
+		unsigned int* _vertexCount,
+		const FoliageNode& _node
+	);
+	// Adds indices for the four triangles in the end cap between two Nodes
+	void AddEndCapIndicesHardEdge(
+		std::vector<Vertex>* _vertices,
+		unsigned int* _vertexCount,
+		std::vector<UINT>* _indices,
+		unsigned int* _indexCount,
+		unsigned int _parentNodeFirstVertex,
+		unsigned int _childNodeFirstVertex
+	);
 
 
 	// CONSTANTS FOR MESH GENERATION
@@ -206,59 +218,98 @@ private:
 
 	// Constant ring vertices to copy to make new rings
 	/*
-	 0---3
-	 |   |
-	 1---2
+	   7   6
+	   |   |
+	0--0---3--5
+	   |   |
+	1--1---2--4
+	   |   |
+	   2   3
 	*/
-	const Vertex RING_V0TO3 = {
-		DirectX::XMFLOAT3(-0.5f, 0.0f, 0.5f),	// Position
-		DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),	// Normal
-		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),	// Tangent (will be calculated automatically)
-		DirectX::XMFLOAT2(1.0f, 0.0f)			// UV
-	};
 	const Vertex RING_V0TO1 = {
-		DirectX::XMFLOAT3(-0.5f, 0.0f, 0.5f),
-		DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f),
-		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-		DirectX::XMFLOAT2(0.0f, 0.0f)
+		DirectX::XMFLOAT3(-0.5f, 0.0f, 0.5f),	// Position
+		DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f),	// Normal
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),	// Tangent (will be calculated automatically)
+		DirectX::XMFLOAT2(0.0f, 1.0f)			// UV
 	};
 	const Vertex RING_V1TO0 = {
 		DirectX::XMFLOAT3(-0.5f, 0.0f, -0.5f),
 		DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-		DirectX::XMFLOAT2(0.25f, 0.0f)
+		DirectX::XMFLOAT2(0.25f, 1.0f)
 	};
 	const Vertex RING_V1TO2 = {
 		DirectX::XMFLOAT3(-0.5f, 0.0f, -0.5f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-		DirectX::XMFLOAT2(0.25f, 0.0f)
+		DirectX::XMFLOAT2(0.25f, 1.0f)
 	};
 	const Vertex RING_V2TO1 = {
 		DirectX::XMFLOAT3(0.5f, 0.0f, -0.5f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-		DirectX::XMFLOAT2(0.5f, 0.0f)
+		DirectX::XMFLOAT2(0.5f, 1.0f)
 	};
 	const Vertex RING_V2TO3 = {
 		DirectX::XMFLOAT3(0.5f, 0.0f, -0.5f),
 		DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-		DirectX::XMFLOAT2(0.5f, 0.0f)
+		DirectX::XMFLOAT2(0.5f, 1.0f)
 	};
 	const Vertex RING_V3TO2 = {
 		DirectX::XMFLOAT3(0.5f, 0.0f, 0.5f),
 		DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-		DirectX::XMFLOAT2(0.75f, 0.0f)
+		DirectX::XMFLOAT2(0.75f, 1.0f)
 	};
 	const Vertex RING_V3TO0 = {
 		DirectX::XMFLOAT3(0.5f, 0.0f, 0.5f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),
 		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
-		DirectX::XMFLOAT2(0.75f, 0.0f)
+		DirectX::XMFLOAT2(0.75f, 1.0f)
+	};
+	const Vertex RING_V0TO3 = {
+		DirectX::XMFLOAT3(-0.5f, 0.0f, 0.5f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(1.0f, 1.0f)
 	};
 	// Indices for making a new quad between two rings
 	const unsigned int SEGMENT_FACE_INDICES[6] = { 3, 0, 2, 3, 1, 0 };
+
+
+
+	// Constant end cap vertices to copy to make new end caps
+	/*
+	   3
+	 0-+-2
+	   1
+	*/
+	const Vertex END_CAP_V0 = {
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),	// Position
+		DirectX::XMFLOAT3(-1.0f, 0.0f, 0.0f),	// Normal
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),	// Tangent (will be calculated automatically)
+		DirectX::XMFLOAT2(0.125f, 0.0f)			// UV
+	};
+	const Vertex END_CAP_V1 = {
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(0.375f, 0.0f)
+	};
+	const Vertex END_CAP_V2 = {
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(0.625f, 0.0f)
+	};
+	const Vertex END_CAP_V3 = {
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f),
+		DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f),
+		DirectX::XMFLOAT2(0.875f, 0.0f)
+	};
+	// Indices for making a new end cap face between this node and the last ring
+	const unsigned int END_CAP_FACE_INDICES[3] = { 2, 1, 0 };
 };
 
