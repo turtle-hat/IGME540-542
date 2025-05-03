@@ -58,6 +58,11 @@ FoliageNode Foliage::GetRootNode()
 	return nodes.size() > 0 ? nodes[0] : FoliageNode{};
 }
 
+FoliageNode Foliage::GetNode(unsigned int _index)
+{
+	return nodes.size() > _index ? nodes[_index] : FoliageNode{};
+}
+
 void Foliage::SetBranchMaterial(std::shared_ptr<Material> _material)
 {
 	branchMaterial = _material;
@@ -151,22 +156,12 @@ void Foliage::GenerateBranchMesh()
 		params.segmentLength,
 		0.0f
 	};
-	
 	nodes.push_back(root);
-
-	AddNodeQuadVertices(&vertices, &vertexCount, &indices, &indexCount, root);
-
-	// Add indices of the quad to the index vector and add 6 to indexCount
-	for (int i = 0; i < 6; i++) {
-		indices.push_back(QUAD_INDICES[i] + indexCount);
-	}
-	indexCount += 6;
-
-
 
 	// Add first ring, then ring above it
 	AddNodeRingVerticesHardEdge(&vertices, &vertexCount, root);
 	FoliageNode second = BuildNodeFromParent(root, &vertexCount, &indexCount);
+	nodes.push_back(second);
 	AddNodeRingVerticesHardEdge(&vertices, &vertexCount, second);
 
 	// Connect the two rings by adding indices
@@ -178,6 +173,9 @@ void Foliage::GenerateBranchMesh()
 		root.verticesStart,
 		second.verticesStart
 	);
+
+	// Add a quad at the root
+	AddNodeQuadVertices(&vertices, &vertexCount, &indices, &indexCount, root);
 
 	// FINAL STEP: Make Mesh object
 	mesh = make_shared<Mesh>("M_Foliage_Generated", vertices.data(), vertexCount, indices.data(), indexCount);
@@ -207,8 +205,8 @@ FoliageNode Foliage::BuildNodeFromParent(const FoliageNode& _parent, unsigned in
 	);
 	// Scale growth direction by segment length and translate by that vector
 	XMStoreFloat4x4(&result.tfLocal, XMMatrixMultiply(
-		XMMatrixTranslationFromVector(XMVectorScale(XMLoadFloat3(&growthDirection), result.nextSegmentLength)),
-		XMLoadFloat4x4(&result.tfLocal)
+		XMLoadFloat4x4(&result.tfLocal),
+		XMMatrixTranslationFromVector(XMVectorScale(XMLoadFloat3(&growthDirection), result.nextSegmentLength))
 	));
 
 	// Update other fields
@@ -224,6 +222,8 @@ FoliageNode Foliage::BuildNodeFromParent(const FoliageNode& _parent, unsigned in
 
 void Foliage::AddNodeQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node)
 {
+	unsigned int initialVertexCount = *_vertexCount;
+
 	// Get new quad vertices
 	Vertex v0 = QUAD_V0;
 	Vertex v1 = QUAD_V1;
@@ -247,6 +247,12 @@ void Foliage::AddNodeQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 	_vertices->push_back(v2);
 	_vertices->push_back(v3);
 	*_vertexCount += 4;
+
+	// Add indices of the quad to the index vector and add 6 to indexCount
+	for (int i = 0; i < 6; i++) {
+		_indices->push_back(QUAD_INDICES[i] + initialVertexCount);
+	}
+	*_indexCount += 6;
 }
 
 void Foliage::AddNodeRingVerticesHardEdge(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, const FoliageNode& _node)

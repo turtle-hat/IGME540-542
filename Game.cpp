@@ -2114,6 +2114,16 @@ void Game::ImGuiBuild() {
 				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", rootTF._41, rootTF._42, rootTF._43, rootTF._44);
 				ImGui::Spacing();
 
+				FoliageNode second = foliages[i]->GetNode(1);
+				XMFLOAT4X4 secondTF = second.tfLocal;
+
+				ImGui::Text("Second Node Transform Matrix:");
+				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", secondTF._11, secondTF._12, secondTF._13, secondTF._14);
+				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", secondTF._21, secondTF._22, secondTF._23, secondTF._24);
+				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", secondTF._31, secondTF._32, secondTF._33, secondTF._34);
+				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", secondTF._41, secondTF._42, secondTF._43, secondTF._44);
+				ImGui::Spacing();
+
 				if (ImGui::DragFloat3("Growth Direction", &params.growthDirection.x, 0.01f)) {
 					paramsDirty = true;
 				}

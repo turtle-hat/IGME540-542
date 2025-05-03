@@ -100,6 +100,7 @@ public:
 	FoliageParams GetParams();
 	const char* GetName();
 	FoliageNode GetRootNode();
+	FoliageNode GetNode(unsigned int _index);
 
 	// Setters
 	void SetBranchMaterial(std::shared_ptr<Material> _material);
