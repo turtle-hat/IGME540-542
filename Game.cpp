@@ -2163,38 +2163,38 @@ void Game::ImGuiBuild() {
 						paramsDirty = true;
 					}
 
-					ImGui::SetItemTooltip("Width of random range for angle between segments' long sides,\nas degrees from directly parallel");
+					ImGui::SetItemTooltip("[CURRENTLY NONFUNCTIONAL]\nWidth of random range for angle between segments' long sides,\nas degrees from directly parallel");
 					float segmentTurnAngleVarianceDegrees = params.segmentTurnAngleVariance * XM_1DIVPI * 180.0f;
 					if (ImGui::SliderFloat("Segment Turn Angle Variance", &segmentTurnAngleVarianceDegrees, 0.0f, 180.0f, "%.1f")) {
 						params.segmentTurnAngleVariance = segmentTurnAngleVarianceDegrees * XM_PI / 180.0f;
 						paramsDirty = true;
 					}
 
-					ImGui::SetItemTooltip("Width of random range for angle between segments' cross-sections,\nas degrees from directly aligned");
+					ImGui::SetItemTooltip("[CURRENTLY NONFUNCTIONAL]\nWidth of random range for angle between segments' cross-sections,\nas degrees from directly aligned");
 					float segmentTwistAngleVarianceDegrees = params.segmentTwistAngleVariance * XM_1DIVPI * 180.0f;
 					if (ImGui::SliderFloat("Segment Twist Angle Variance", &segmentTwistAngleVarianceDegrees, 0.0f, 180.0f, "%.1f")) {
 						params.segmentTwistAngleVariance = segmentTwistAngleVarianceDegrees * XM_PI / 180.0f;
 						paramsDirty = true;
 					}
 
-					ImGui::SetItemTooltip("Percent chance that a branch will split");
+					ImGui::SetItemTooltip("[CURRENTLY NONFUNCTIONAL]\nPercent chance that a branch will split");
 					if (ImGui::SliderFloat("Split Chance", &params.splitChance, 0.0f, 1.0f, "%.2f")) {
 						paramsDirty = true;
 					}
 
-					ImGui::SetItemTooltip("Multiplied to split chance after each segment");
+					ImGui::SetItemTooltip("[CURRENTLY NONFUNCTIONAL]\nMultiplied to split chance after each segment");
 					if (ImGui::DragFloat("Split Chance Multiplier", &params.splitChanceMultiplier, 0.01f, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
 						paramsDirty = true;
 					}
 
-					ImGui::SetItemTooltip("Average angle at which split branches diverge after a split,\nas degrees from directly upwards");
+					ImGui::SetItemTooltip("[CURRENTLY NONFUNCTIONAL]\nAverage angle at which split branches diverge after a split,\nas degrees from directly upwards");
 					float splitAngleDegrees = params.splitAngle * XM_1DIVPI * 180.0f;
 					if (ImGui::SliderFloat("Split Angle", &splitAngleDegrees, 0.0f, 180.0f, "%.1f")) {
 						params.splitAngle = splitAngleDegrees * XM_PI / 180.0f;
 						paramsDirty = true;
 					}
 
-					ImGui::SetItemTooltip("Width of random range for split angle");
+					ImGui::SetItemTooltip("[CURRENTLY NONFUNCTIONAL]\nWidth of random range for split angle");
 					float splitAngleVarianceDegrees = params.splitAngleVariance * XM_1DIVPI * 180.0f;
 					if (ImGui::SliderFloat("Split Angle Variance", &splitAngleVarianceDegrees, 0.0f, 180.0f, "%.1f")) {
 						params.splitAngleVariance = splitAngleVarianceDegrees * XM_PI / 180.0f;

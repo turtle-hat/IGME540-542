@@ -242,5 +242,6 @@
   <ItemGroup>
     <Text Include="TextureReadMe.txt" />
     <Text Include="Final_ReadMe.txt" />
+    <Text Include="README.txt" />
   </ItemGroup>
 </Project>
