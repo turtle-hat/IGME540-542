@@ -445,7 +445,7 @@ void Foliage::AddEndCapIndicesHardEdge(std::vector<UINT>* _indices, unsigned int
 	for (unsigned int face = 0; face < 4; face++) {
 		for (unsigned int index = 0; index < 3; index++) {
 			// Get index from constant array
-			unsigned int endCapQuadIndex = END_CAP_FACE_INDICES[index] + face;
+			unsigned int endCapQuadIndex = END_CAP_FACE_INDICES[index];
 			_indices->push_back(endCapQuadIndex < 2 ?
 				// If index is 0 or 1 (i.e. on the parent's ring),
 				// get the parent's start vertex, offset by 2 per face, and add the known index

@@ -2127,12 +2127,12 @@ void Game::ImGuiBuild() {
 					}
 
 					ImGui::SetItemTooltip("Caps the maximum length branches can grow to");
-					if (ImGui::DragFloat("Max Length", &params.maxLength, 0.01f, 0.0f, NULL, "%.2f")) {
+					if (ImGui::DragFloat("Max Length", &params.maxLength, 1.0f, 0.01f, FLT_MAX, "%.2f")) {
 						paramsDirty = true;
 					}
 
 					ImGui::SetItemTooltip("Average length for each branch segment");
-					if (ImGui::DragFloat("Starting Segment Length", &params.segmentLength, 0.01f, 0.0f, NULL, "%.2f")) {
+					if (ImGui::DragFloat("Starting Segment Length", &params.segmentLength, 0.1f, 0.01f, FLT_MAX, "%.2f")) {
 						params.segmentLengthVariance = min(params.segmentLengthVariance, params.segmentLength);
 						paramsDirty = true;
 					}
@@ -2148,7 +2148,7 @@ void Game::ImGuiBuild() {
 					}
 
 					ImGui::SetItemTooltip("Average width for each branch segment");
-					if (ImGui::DragFloat("Starting Segment Width", &params.segmentWidth, 0.01f, 0.0f, NULL, "%.2f")) {
+					if (ImGui::DragFloat("Starting Segment Width", &params.segmentWidth, 0.01f, 0.01f, FLT_MAX, "%.2f")) {
 						params.segmentWidthVariance = min(params.segmentWidthVariance, params.segmentWidth);
 						paramsDirty = true;
 					}
