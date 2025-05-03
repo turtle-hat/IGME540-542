@@ -157,8 +157,6 @@ private:
 	);
 	// Adds indices for the eight triangles in the segment between two Nodes
 	void AddSegmentIndicesHardEdge(
-		std::vector<Vertex>* _vertices,
-		unsigned int* _vertexCount,
 		std::vector<UINT>* _indices,
 		unsigned int* _indexCount,
 		unsigned int _parentNodeFirstVertex,
@@ -172,8 +170,6 @@ private:
 	);
 	// Adds indices for the four triangles in the end cap between two Nodes
 	void AddEndCapIndicesHardEdge(
-		std::vector<Vertex>* _vertices,
-		unsigned int* _vertexCount,
 		std::vector<UINT>* _indices,
 		unsigned int* _indexCount,
 		unsigned int _parentNodeFirstVertex,

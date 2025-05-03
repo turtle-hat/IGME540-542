@@ -174,6 +174,7 @@ void Foliage::GenerateBranchMesh()
 		nodesToBuild.pop();
 
 		FoliageNode child = BuildNodeFromParent(parent, &vertexCount, &indexCount);
+		nodes.push_back(child);
 		
 		// If child is final, add end cap
 		if (child.isFinal) {
@@ -182,8 +183,6 @@ void Foliage::GenerateBranchMesh()
 
 			// Connect the end cap to the ring by adding indices
 			AddEndCapIndicesHardEdge(
-				&vertices,
-				&vertexCount,
 				&indices,
 				&indexCount,
 				parent.verticesStart,
@@ -194,13 +193,12 @@ void Foliage::GenerateBranchMesh()
 
 		// Otherwise, add vertex ring
 		} else {
+
 			// Add vertices for ring
 			AddNodeRingVerticesHardEdge(&vertices, &vertexCount, child);
 
 			// Connect the two rings by adding indices
 			AddSegmentIndicesHardEdge(
-				&vertices,
-				&vertexCount,
 				&indices,
 				&indexCount,
 				parent.verticesStart,
@@ -357,7 +355,7 @@ void Foliage::AddNodeRingVerticesHardEdge(std::vector<Vertex>* _vertices, unsign
 	float vIteration = (float)_node.iteration / (float)params.maxIterations; // 2.
 	float vLength = (float)_node.totalLength / (float)params.maxLength; // 3.
 	float vFinal = _node.width > 0.0f ? // 1.
-		1.0f - max(max(vIteration, vLength), 1.0f)
+		1.0f - min(max(vIteration, vLength), 1.0f)
 		: 0.0f;
 
 	v0to1.UV.y = vFinal;
@@ -381,7 +379,7 @@ void Foliage::AddNodeRingVerticesHardEdge(std::vector<Vertex>* _vertices, unsign
 	*_vertexCount += 8;
 }
 
-void Foliage::AddSegmentIndicesHardEdge(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, unsigned int _parentNodeFirstVertex, unsigned int _childNodeFirstVertex)
+void Foliage::AddSegmentIndicesHardEdge(std::vector<UINT>* _indices, unsigned int* _indexCount, unsigned int _parentNodeFirstVertex, unsigned int _childNodeFirstVertex)
 {
 	// Loop through each index of each face
 	for (unsigned int face = 0; face < 4; face++) {
@@ -430,7 +428,7 @@ void Foliage::AddNodeEndCapVerticesHardEdge(std::vector<Vertex>* _vertices, unsi
 	float vIteration = (float)_node.iteration / params.maxIterations; // 2.
 	float vLength = (float)_node.totalLength / params.maxLength; // 3.
 	float vFinal = _node.width > 0.0f ? // 1.
-		1.0f - max(max(vIteration, vLength), 1.0f)
+		1.0f - min(max(vIteration, vLength), 1.0f)
 		: 0.0f;
 
 	// Add vertices to vertex vector and add 4 to vertexCount
@@ -441,7 +439,7 @@ void Foliage::AddNodeEndCapVerticesHardEdge(std::vector<Vertex>* _vertices, unsi
 	*_vertexCount += 4;
 }
 
-void Foliage::AddEndCapIndicesHardEdge(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, unsigned int _parentNodeFirstVertex, unsigned int _childNodeFirstVertex)
+void Foliage::AddEndCapIndicesHardEdge(std::vector<UINT>* _indices, unsigned int* _indexCount, unsigned int _parentNodeFirstVertex, unsigned int _childNodeFirstVertex)
 {
 	// Loop through each index of each face
 	for (unsigned int face = 0; face < 4; face++) {

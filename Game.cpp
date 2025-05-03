@@ -400,8 +400,8 @@ void Game::CreateFoliage()
 	fParams.segmentLengthVariance		= 0.2f;
 	fParams.segmentLengthMultiplier		= 0.95f;
 	fParams.segmentWidth				= 1.0f;
-	fParams.segmentWidthVariance		= 0.05f;
-	fParams.segmentWidthMultiplier		= 0.95f;
+	fParams.segmentWidthVariance		= 0.1f;
+	fParams.segmentWidthMultiplier		= 0.9f;
 	fParams.segmentTurnAngleVariance	= 0.05f;
 	fParams.segmentTwistAngleVariance	= 0.5f;
 	fParams.splitChance					= 0.5f;
