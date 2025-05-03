@@ -174,8 +174,8 @@ void Foliage::GenerateBranchMesh()
 		second.verticesStart
 	);
 
-	// Add a quad at the root
-	AddNodeQuadVertices(&vertices, &vertexCount, &indices, &indexCount, root);
+	// Add a quad at the root for testing
+	//AddNodeQuadVertices(&vertices, &vertexCount, &indices, &indexCount, root);
 
 	// FINAL STEP: Make Mesh object
 	mesh = make_shared<Mesh>("M_Foliage_Generated", vertices.data(), vertexCount, indices.data(), indexCount);
@@ -222,8 +222,6 @@ FoliageNode Foliage::BuildNodeFromParent(const FoliageNode& _parent, unsigned in
 
 void Foliage::AddNodeQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node)
 {
-	unsigned int initialVertexCount = *_vertexCount;
-
 	// Get new quad vertices
 	Vertex v0 = QUAD_V0;
 	Vertex v1 = QUAD_V1;
@@ -246,12 +244,13 @@ void Foliage::AddNodeQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 	_vertices->push_back(v1);
 	_vertices->push_back(v2);
 	_vertices->push_back(v3);
-	*_vertexCount += 4;
 
 	// Add indices of the quad to the index vector and add 6 to indexCount
+	unsigned int initialVertexCount = *_vertexCount;
 	for (int i = 0; i < 6; i++) {
 		_indices->push_back(QUAD_INDICES[i] + initialVertexCount);
 	}
+	*_vertexCount += 4;
 	*_indexCount += 6;
 }
 
@@ -285,6 +284,27 @@ void Foliage::AddNodeRingVerticesHardEdge(std::vector<Vertex>* _vertices, unsign
 	TransformVectorByMatrix(&v3to2.Normal, _node.tfLocal);
 	TransformVectorByMatrix(&v3to0.Normal, _node.tfLocal);
 	TransformVectorByMatrix(&v0to3.Normal, _node.tfLocal);
+
+	// Four conditions can decrease the texture V coordinate of a node's vertices (i.e. move up the texture):
+	// 1. width equaling 0.0f (if true, always set to 1.0f)
+	// 2. nextSegmentLength equaling 0.0f (if true, always set to 1.0f)
+	// 3. totalCost approaching 1.0f
+	// 4. iteration approaching maxIteration
+	// Whichever is the highest becomes the new V coordinate
+	float vCost = max(_node.totalCost, 0.0f); // 3.
+	float vIteration = (float)_node.iteration / params.maxIterations; // 4.
+	float vFinal = _node.width > 0.0f && _node.nextSegmentLength > 0.0f ? // 1. & 2.
+		max(vCost, vIteration)
+		: 1.0f;
+
+	v0to1.UV.y = vFinal;
+	v1to0.UV.y = vFinal;
+	v1to2.UV.y = vFinal;
+	v2to1.UV.y = vFinal;
+	v2to3.UV.y = vFinal;
+	v3to2.UV.y = vFinal;
+	v3to0.UV.y = vFinal;
+	v0to3.UV.y = vFinal;
 
 	// Add vertices to vertex vector and add 4 to vertexCount
 	_vertices->push_back(v0to1);
