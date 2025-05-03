@@ -2101,9 +2101,101 @@ void Game::ImGuiBuild() {
 				if (foliageSca.z < 0.0f) foliageSca.z = 0.0f;
 				ImGui::Spacing();
 
-				// Get parameters
-				FoliageParams params = foliages[i]->GetParams();
-				bool paramsDirty = false;
+				if (ImGui::TreeNode("Parameters")) {
+					// Get parameters
+					FoliageParams params = foliages[i]->GetParams();
+					bool paramsDirty = false;
+
+					int seed = params.seed;
+					if (ImGui::InputInt("Seed", &seed, 1, 100)) {
+						params.seed = (unsigned int)max(seed, 0);
+						paramsDirty = true;
+					}
+
+					if (ImGui::DragFloat3("Growth Direction", &params.growthDirection.x, 0.01f, -1.0f, 1.0f, "%.2f")) {
+						paramsDirty = true;
+					}
+
+					int maxIterations = params.maxIterations;
+					if (ImGui::DragInt("Max Iterations", &maxIterations, 1, 0, 127)) {
+						paramsDirty = true;
+					}
+
+					if (ImGui::DragFloat("Starting Segment Length", &params.segmentLength, 0.01f, 0.0f, NULL, "%.2f")) {
+						params.segmentLengthVariance = min(params.segmentLengthVariance, params.segmentLength);
+						paramsDirty = true;
+					}
+
+					if (ImGui::SliderFloat("Segment Length Variance", &params.segmentLengthVariance, 0.01f, params.segmentLength, "%.2f")) {
+						paramsDirty = true;
+					}
+
+					if (ImGui::SliderFloat("Segment Length Multiplier", &params.segmentLengthMultiplier, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+						paramsDirty = true;
+					}
+
+					if (ImGui::DragFloat("Starting Segment Width", &params.segmentWidth, 0.01f, 0.0f, NULL, "%.2f")) {
+						params.segmentWidthVariance = min(params.segmentWidthVariance, params.segmentWidth);
+						paramsDirty = true;
+					}
+
+					if (ImGui::SliderFloat("Segment Width Variance", &params.segmentWidthVariance, 0.0f, params.segmentWidth, "%.2f")) {
+						paramsDirty = true;
+					}
+
+					if (ImGui::SliderFloat("Segment Width Multiplier", &params.segmentWidthMultiplier, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+						paramsDirty = true;
+					}
+
+					float segmentTurnAngleVarianceDegrees = params.segmentTurnAngleVariance * XM_1DIVPI * 180.0f;
+					if (ImGui::SliderFloat("Segment Turn Angle Variance", &segmentTurnAngleVarianceDegrees, 0.0f, 180.0f, "%.1f")) {
+						params.segmentTurnAngleVariance = segmentTurnAngleVarianceDegrees * XM_PI / 180.0f;
+						paramsDirty = true;
+					}
+
+					float segmentTwistAngleVarianceDegrees = params.segmentTwistAngleVariance * XM_1DIVPI * 180.0f;
+					if (ImGui::SliderFloat("Segment Twist Angle Variance", &segmentTwistAngleVarianceDegrees, 0.0f, 180.0f, "%.1f")) {
+						params.segmentTwistAngleVariance = segmentTwistAngleVarianceDegrees * XM_PI / 180.0f;
+						paramsDirty = true;
+					}
+
+					if (ImGui::SliderFloat("Segment Cost", &params.segmentCost, 0.0f, 1.0f, "%.2f")) {
+						params.segmentCostVariance = min(params.segmentCostVariance, params.segmentCost);
+						paramsDirty = true;
+					}
+
+					if (ImGui::SliderFloat("Segment Cost Variance", &params.segmentCostVariance, 0.0f, params.segmentCost, "%.2f")) {
+						paramsDirty = true;
+					}
+
+					if (ImGui::SliderFloat("Split Chance", &params.splitChance, 0.0f, 1.0f, "%.2f")) {
+						paramsDirty = true;
+					}
+
+					if (ImGui::SliderFloat("Split Chance Multiplier", &params.splitChanceMultiplier, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+						paramsDirty = true;
+					}
+
+					float splitAngleDegrees = params.splitAngle * XM_1DIVPI * 180.0f;
+					if (ImGui::SliderFloat("Split Angle", &splitAngleDegrees, 0.0f, 180.0f)) {
+						params.splitAngle = splitAngleDegrees * XM_PI / 180.0f;
+						paramsDirty = true;
+					}
+
+					float splitAngleVarianceDegrees = params.splitAngleVariance * XM_1DIVPI * 180.0f;
+					if (ImGui::SliderFloat("Split Angle Variance", &splitAngleVarianceDegrees, 0.0f, 180.0f)) {
+						params.splitAngleVariance = splitAngleVarianceDegrees * XM_PI / 180.0f;
+						paramsDirty = true;
+					}
+
+					// If the user has changed any parameters, set them
+					if (paramsDirty) {
+						foliages[i]->SetParams(params);
+					}
+
+					ImGui::TreePop();
+					ImGui::Spacing();
+				}
 
 				FoliageNode root = foliages[i]->GetRootNode();
 				XMFLOAT4X4 rootTF = root.tfLocal;
@@ -2114,25 +2206,6 @@ void Game::ImGuiBuild() {
 				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", rootTF._31, rootTF._32, rootTF._33, rootTF._34);
 				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", rootTF._41, rootTF._42, rootTF._43, rootTF._44);
 				ImGui::Spacing();
-
-				/*FoliageNode second = foliages[i]->GetNode(1);
-				XMFLOAT4X4 secondTF = second.tfLocal;
-
-				ImGui::Text("Second Node Transform Matrix:");
-				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", secondTF._11, secondTF._12, secondTF._13, secondTF._14);
-				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", secondTF._21, secondTF._22, secondTF._23, secondTF._24);
-				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", secondTF._31, secondTF._32, secondTF._33, secondTF._34);
-				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", secondTF._41, secondTF._42, secondTF._43, secondTF._44);
-				ImGui::Spacing();*/
-
-				if (ImGui::DragFloat3("Growth Direction", &params.growthDirection.x, 0.01f)) {
-					paramsDirty = true;
-				}
-
-				// If the user has changed any parameters, set them
-				if (paramsDirty) {
-					foliages[i]->SetParams(params);
-				}
 
 				ImGui::TreePop();
 				ImGui::Spacing();
