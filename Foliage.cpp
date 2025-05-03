@@ -86,6 +86,7 @@ void Foliage::SetParams(FoliageParams _params)
 void Foliage::GenerateBranchMesh()
 {
 	nodes.clear();
+	srand(params.seed);
 
 	vector<Vertex> vertices;		// Generated vertices
 	vector<UINT> indices;			// Generated indices
@@ -176,18 +177,18 @@ void Foliage::GenerateBranchMesh()
 		
 		// If child is final, add end cap
 		if (child.isFinal) {
-			//// Add vertices for end cap
-			//AddNodeEndCapVerticesHardEdge(&vertices, &vertexCount, child);
+			// Add vertices for end cap
+			AddNodeEndCapVerticesHardEdge(&vertices, &vertexCount, child);
 
-			//// Connect the end cap to the ring by adding indices
-			//AddEndCapIndicesHardEdge(
-			//	&vertices,
-			//	&vertexCount,
-			//	&indices,
-			//	&indexCount,
-			//	parent.verticesStart,
-			//	child.verticesStart
-			//);
+			// Connect the end cap to the ring by adding indices
+			AddEndCapIndicesHardEdge(
+				&vertices,
+				&vertexCount,
+				&indices,
+				&indexCount,
+				parent.verticesStart,
+				child.verticesStart
+			);
 
 			// DO NOT push the child back onto the queue
 
@@ -353,8 +354,8 @@ void Foliage::AddNodeRingVerticesHardEdge(std::vector<Vertex>* _vertices, unsign
 	// 2. iteration approaching maxIteration
 	// 3. totalLength approaching maxLength
 	// Whichever is the highest gets subtracted from 1.0f to become the new V coordinate
-	float vIteration = (float)_node.iteration / params.maxIterations; // 2.
-	float vLength = (float)_node.totalLength / params.maxLength; // 3.
+	float vIteration = (float)_node.iteration / (float)params.maxIterations; // 2.
+	float vLength = (float)_node.totalLength / (float)params.maxLength; // 3.
 	float vFinal = _node.width > 0.0f ? // 1.
 		1.0f - max(max(vIteration, vLength), 1.0f)
 		: 0.0f;
@@ -420,6 +421,17 @@ void Foliage::AddNodeEndCapVerticesHardEdge(std::vector<Vertex>* _vertices, unsi
 	TransformVectorByMatrix(&v1.Normal, _node.tfLocal);
 	TransformVectorByMatrix(&v2.Normal, _node.tfLocal);
 	TransformVectorByMatrix(&v3.Normal, _node.tfLocal);
+
+	// Three conditions can decrease the texture V coordinate of a node's vertices (i.e. move up the texture):
+	// 1. width equaling 0.0f (if true, always set V to 0.0f)
+	// 2. iteration approaching maxIteration
+	// 3. totalLength approaching maxLength
+	// Whichever is the highest gets subtracted from 1.0f to become the new V coordinate
+	float vIteration = (float)_node.iteration / params.maxIterations; // 2.
+	float vLength = (float)_node.totalLength / params.maxLength; // 3.
+	float vFinal = _node.width > 0.0f ? // 1.
+		1.0f - max(max(vIteration, vLength), 1.0f)
+		: 0.0f;
 
 	// Add vertices to vertex vector and add 4 to vertexCount
 	_vertices->push_back(v0);

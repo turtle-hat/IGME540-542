@@ -122,7 +122,9 @@ private:
 
 	// Generates new nodes and a new mesh for branches from the parameters
 	void GenerateBranchMesh();
-	
+
+
+
 	// HELPER FUNCTIONS FOR MESH GENERATION ONLY
 	void TransformVectorByMatrix(
 		DirectX::XMFLOAT3* _vector, 
