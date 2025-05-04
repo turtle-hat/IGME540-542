@@ -16,6 +16,7 @@ cbuffer PrimaryBuffer : register(b0)
 
 	float metalness;
 	int shadowsActive;
+    float2 padding;
 }
 
 Texture2D MapAlbedoMetalness : register(t0); // "t" registers for textures

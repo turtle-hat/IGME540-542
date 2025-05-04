@@ -187,6 +187,8 @@ private:
 	// Shaders
 	std::shared_ptr<SimpleVertexShader> vsFoliageLeaf;
 	std::shared_ptr<SimplePixelShader> psFoliageLeaf;
+	// Pipeline State
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> foliageLeafRasterizer;
 
 
 

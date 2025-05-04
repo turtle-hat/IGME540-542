@@ -52,9 +52,6 @@
     <FxCompile Include="VS_Particle.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="VS_FoliageLeaf.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="PS_FoliageLeaf.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>

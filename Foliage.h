@@ -63,6 +63,14 @@ struct FoliageParams {
 										// as radians from directly upwards
 	float splitAngleVariance;			// Width of random range for split angle
 
+	float leavesPerSegment;				// Average number of leaf quads to be created for each segment
+	float leavesPerSegmentVariance;		// Width of random range for leaf count on a given segment
+	float leavesPerSegmentMultiplier;	// Multiplied to leaf count after each segment
+
+	float leafWidth;					// Average width for each leaf quad
+	float leafWidthVariance;			// Width of random range for leaf width
+	float leafWidthMultiplier;			// Multiplied to leaf width after each segment
+
 	//DirectX::XMFLOAT3 gravity;		// Vector added to the angle of each branch
 };
 
@@ -91,7 +99,8 @@ public:
 	~Foliage();
 
 	// Getters
-	std::shared_ptr<Mesh> GetMesh();
+	std::shared_ptr<Mesh> GetBranchMesh();
+	std::shared_ptr<Mesh> GetLeafMesh();
 	std::shared_ptr<Material> GetBranchMaterial();
 	std::shared_ptr<Material> GetLeafMaterial();
 	std::shared_ptr<Transform> GetTransform();
@@ -107,7 +116,8 @@ public:
 
 private:
 	// User-defined fields
-	std::shared_ptr<Mesh> mesh;
+	std::shared_ptr<Mesh> branchMesh;
+	std::shared_ptr<Mesh> leafMesh;
 	std::shared_ptr<Material> branchMaterial;
 	std::shared_ptr<Material> leafMaterial;
 	std::shared_ptr<Transform> transform;
@@ -122,6 +132,7 @@ private:
 
 	// Generates new nodes and a new mesh for branches from the parameters
 	void GenerateBranchMesh();
+	void GenerateLeafMesh();
 
 
 

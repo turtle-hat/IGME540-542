@@ -17,11 +17,13 @@ Material::Material(const char* _name, std::shared_ptr<SimpleVertexShader> _verte
 	colorTint = _colorTint;
 	roughness = std::clamp(_roughness, 0.0f, 1.0f);
 	metalness = 1.0f;
+	alphaThreshold = 1.0f;
 	uvPosition = DirectX::XMFLOAT2(0.0f, 0.0f);
 	uvScale = DirectX::XMFLOAT2(1.0f, 1.0f);
 	useGlobalEnvironmentMap = false;
 	isSamplerStateLocked = false;
 	isPBR = false;
+	useAlphaThreshold = false;
 }
 
 /// <summary>
@@ -41,11 +43,13 @@ Material::Material(const char* _name, std::shared_ptr<SimpleVertexShader> _verte
 	colorTint = _colorTint;
 	roughness = std::clamp(_roughness, 0.0f, 1.0f);
 	metalness = 1.0f;
+	alphaThreshold = 1.0f;
 	uvPosition = DirectX::XMFLOAT2(0.0f, 0.0f);
 	uvScale = DirectX::XMFLOAT2(1.0f, 1.0f);
 	useGlobalEnvironmentMap = _useGlobalEnvironmentMap;
 	isSamplerStateLocked = false;
 	isPBR = false;
+	useAlphaThreshold = false;
 }
 
 /// <summary>
@@ -65,11 +69,13 @@ Material::Material(const char* _name, std::shared_ptr<SimpleVertexShader> _verte
 	colorTint = _colorTint;
 	roughness = std::clamp(_roughness, 0.0f, 1.0f);
 	metalness = std::clamp(_metalness, 0.0f, 1.0f);
+	alphaThreshold = 1.0f;
 	uvPosition = DirectX::XMFLOAT2(0.0f, 0.0f);
 	uvScale = DirectX::XMFLOAT2(1.0f, 1.0f);
 	useGlobalEnvironmentMap = false;
 	isSamplerStateLocked = false;
 	isPBR = true;
+	useAlphaThreshold = false;
 }
 
 /// <summary>
@@ -115,6 +121,11 @@ float Material::GetRoughness()
 float Material::GetMetalness()
 {
 	return metalness;
+}
+
+float Material::GetAlphaThreshold()
+{
+	return alphaThreshold;
 }
 
 /// <summary>
@@ -193,6 +204,11 @@ void Material::SetRoughness(float _roughness)
 void Material::SetMetalness(float _metalness)
 {
 	metalness = std::clamp(_metalness, 0.0f, 1.0f);
+}
+
+void Material::SetAlphaThreshold(float _alphaThreshold)
+{
+	alphaThreshold = _alphaThreshold;
 }
 
 /// <summary>

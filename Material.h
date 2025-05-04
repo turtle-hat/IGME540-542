@@ -17,6 +17,7 @@ public:
 	DirectX::XMFLOAT4 GetColorTint();
 	float GetRoughness();
 	float GetMetalness();
+	float GetAlphaThreshold();
 	const char* GetName();
 	DirectX::XMFLOAT2 GetUVPosition();
 	DirectX::XMFLOAT2 GetUVScale();
@@ -27,6 +28,7 @@ public:
 	void SetColorTint(DirectX::XMFLOAT4 _colorTint);
 	void SetRoughness(float _roughness);
 	void SetMetalness(float _metalness);
+	void SetAlphaThreshold(float _alphaThreshold);
 	void SetUVPosition(DirectX::XMFLOAT2 _position);
 	void SetUVScale(DirectX::XMFLOAT2 _scale);
 	void LockSamplerState();
@@ -39,6 +41,7 @@ public:
 	bool useGlobalEnvironmentMap;
 	// Whether this material uses PBR shaders and thus ignores roughness
 	bool isPBR;
+	bool useAlphaThreshold;
 
 private:
 	void RebuildTextureList();
@@ -48,6 +51,7 @@ private:
 	DirectX::XMFLOAT4 colorTint;
 	float roughness;
 	float metalness;
+	float alphaThreshold;
 
 	// Texture settings
 

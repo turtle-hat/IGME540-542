@@ -256,9 +256,11 @@ void Game::CreateMaterials()
 	materials[13]->AddTextureSRV("MapNormalRoughness", textures[22]);
 	materials[13]->AddSampler("BasicSampler", samplerState);
 
-	AddMaterial("Mat_FoliageLeaf", vsFoliageLeaf, psFoliageLeaf, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	AddPBRMaterial("Mat_FoliageLeaf_PBR", vsFoliageLeaf, psFoliageLeaf, 1.0f, 0.0f);
 	materials[14]->AddTextureSRV("MapAlbedoAlpha", textures[23]);
 	materials[14]->AddTextureSRV("MapNormal", textures[24]);
+	materials[14]->SetAlphaThreshold(0.5f);
+	materials[14]->useAlphaThreshold = true;
 
 }
 
@@ -391,6 +393,13 @@ void Game::CreateParticleEmitters()
 
 void Game::CreateFoliage()
 {
+	// Create rasterizer state for leaves so back faces aren't culled
+	D3D11_RASTERIZER_DESC foliageLeafRastDesc = {};
+	foliageLeafRastDesc.FillMode = D3D11_FILL_SOLID;
+	foliageLeafRastDesc.CullMode = D3D11_CULL_NONE;
+	foliageLeafRastDesc.DepthClipEnable = true;
+	Graphics::Device->CreateRasterizerState(&foliageLeafRastDesc, &foliageLeafRasterizer);
+
 	FoliageParams fParams = {};
 	fParams.seed						= 12345678;
 	fParams.growthDirection				= XMFLOAT3(0.0f, 1.0f, 0.0f);
@@ -408,7 +417,13 @@ void Game::CreateFoliage()
 	fParams.splitChanceMultiplier		= 1.1f;
 	fParams.splitAngle					= 0.25f;
 	fParams.splitAngleVariance			= 0.2f;
-	auto fTree = make_shared<Foliage>("F_Tree", materials[13], materials[14], fParams);
+	fParams.leavesPerSegment			= 2.0f;
+	fParams.leavesPerSegmentVariance	= 0.5f;
+	fParams.leavesPerSegmentMultiplier	= 1.2f;
+	fParams.leafWidth					= 5.0f;
+	fParams.leafWidthVariance			= 2.0f;
+	fParams.leafWidthMultiplier			= 0.8f;
+	auto fTree = make_shared<Foliage>("F_Tree", materials[13], materials[1], fParams);
 	fTree->GetTransform()->MoveAbsolute(0.0f, -2.0f, -2.0f);
 	foliages.push_back(fTree);
 }
@@ -526,8 +541,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		vsShadowMap->SetMatrix4x4("world", foliages[i]->GetTransform()->GetWorld());
 		vsShadowMap->CopyAllBufferData();
 
-		// Draw the entity's mesh
-		foliages[i]->GetMesh()->Draw();
+		// Draw both the foliage's meshes
+		foliages[i]->GetBranchMesh()->Draw();
+		foliages[i]->GetLeafMesh()->Draw();
 	}
 
 	// Reset viewport, render target, depth buffer, and rasterizer state for normal rendering
@@ -622,6 +638,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		if (material->isPBR) {
 			// Only use metalness for PBR materials
 			ps->SetFloat("metalness", material->GetMetalness());
+			ps->SetInt("shadowsActive", pRenderShadows ? 1 : 0);
 		}
 		else {
 			// Only use ambient light for non-PBR materials
@@ -682,6 +699,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		if (matBranch->isPBR) {
 			// Only use metalness for PBR materials
 			psBranch->SetFloat("metalness", matBranch->GetMetalness());
+			psBranch->SetInt("shadowsActive", pRenderShadows ? 1 : 0);
 		}
 		else {
 			// Only use ambient light for non-PBR materials
@@ -693,7 +711,76 @@ void Game::Draw(float deltaTime, float totalTime)
 		psBranch->CopyAllBufferData();
 
 		// Draw the entity's mesh
-		foliages[i]->GetMesh()->Draw();
+		foliages[i]->GetBranchMesh()->Draw();
+
+
+
+		// LEAVES
+		Graphics::Context->RSSetState(foliageLeafRasterizer.Get());
+
+		// Get leaf material
+		std::shared_ptr<Material> matLeaf = foliages[i]->GetLeafMaterial();
+		// Prepare the material for drawing
+		matLeaf->PrepareMaterial();
+
+		// Get leaf material's shaders
+		std::shared_ptr<SimpleVertexShader> vsLeaf = matLeaf->GetVertexShader();
+		std::shared_ptr<SimplePixelShader> psLeaf = matLeaf->GetPixelShader();
+
+		// Set vertex and pixel shaders as active
+		vsLeaf->SetShader();
+		psLeaf->SetShader();
+
+		// Fill constant buffers with foliage's data
+		// VERTEX
+		vsLeaf->SetMatrix4x4("tfWorld", foliages[i]->GetTransform()->GetWorld());
+		vsLeaf->SetMatrix4x4("tfView", cameras[pCameraCurrent]->GetViewMatrix());
+		vsLeaf->SetMatrix4x4("tfProjection", cameras[pCameraCurrent]->GetProjectionMatrix());
+		vsLeaf->SetMatrix4x4("tfWorldIT", foliages[i]->GetTransform()->GetWorldInverseTranspose());
+		vsLeaf->SetMatrix4x4("tfShadowView", shadowLightViewMatrix);
+		vsLeaf->SetMatrix4x4("tfShadowProjection", shadowLightProjectionMatrix);
+		// PIXEL
+		psLeaf->SetFloat4("colorTint", matLeaf->GetColorTint());
+		psLeaf->SetFloat("roughness", matLeaf->GetRoughness());
+		psLeaf->SetFloat3("cameraPosition", cameras[pCameraCurrent]->GetTransform()->GetPosition());
+
+		psLeaf->SetFloat2("uvPosition", matLeaf->GetUVPosition());
+		psLeaf->SetFloat2("uvScale", matLeaf->GetUVScale());
+
+		// Set lights on pixel shader
+		psLeaf->SetData("lights", &lights[0], sizeof(Light)* (int)lights.size());
+		// MATERIAL-SPECIFIC PIXEL SHADER CONSTANT BUFFER INPUTS
+		if (matLeaf->GetName() == "Mat_Custom") {
+			psLeaf->SetFloat("totalTime", totalTime);
+			psLeaf->SetFloat2("imageCenter", pMatCustomImage);
+			psLeaf->SetFloat2("zoomCenter", pMatCustomZoom);
+			psLeaf->SetInt("maxIterations", pMatCustomIterations);
+		}
+
+		if (matLeaf->isPBR) {
+			// Only use metalness for PBR materials
+			psLeaf->SetFloat("metalness", matLeaf->GetMetalness());
+			psLeaf->SetInt("shadowsActive", pRenderShadows ? 1 : 0);
+			// If using an alpha threshold, set it too
+			if (matLeaf->useAlphaThreshold) {
+				psLeaf->SetFloat("alphaThreshold", matLeaf->GetAlphaThreshold());
+			}
+		}
+		else {
+			// Only use ambient light for non-PBR materials
+			psLeaf->SetFloat3("lightAmbient", skyboxAmbientColors[pSkyboxCurrent]);
+		}
+
+
+		// COPY DATA TO CONSTANT BUFFERS
+		vsLeaf->CopyAllBufferData();
+		psLeaf->CopyAllBufferData();
+
+		// Draw the entity's leaf mesh
+		foliages[i]->GetLeafMesh()->Draw();
+
+		// Reset rasterizer state
+		Graphics::Context->RSSetState(0);
 	}
 
 	// Draw the selected skybox

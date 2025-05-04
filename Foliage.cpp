@@ -27,9 +27,14 @@ Foliage::~Foliage()
 {
 }
 
-std::shared_ptr<Mesh> Foliage::GetMesh()
+std::shared_ptr<Mesh> Foliage::GetBranchMesh()
 {
-	return mesh;
+	return branchMesh;
+}
+
+std::shared_ptr<Mesh> Foliage::GetLeafMesh()
+{
+	return leafMesh;
 }
 
 std::shared_ptr<Material> Foliage::GetBranchMaterial()
@@ -214,7 +219,11 @@ void Foliage::GenerateBranchMesh()
 	//AddNodeQuadVertices(&vertices, &vertexCount, &indices, &indexCount, root);
 
 	// FINAL STEP: Make Mesh object
-	mesh = make_shared<Mesh>("M_Foliage_Generated", vertices.data(), vertexCount, indices.data(), indexCount);
+	branchMesh = make_shared<Mesh>("M_Foliage_Generated", vertices.data(), vertexCount, indices.data(), indexCount);
+}
+
+void Foliage::GenerateLeafMesh()
+{
 }
 
 void Foliage::TransformVectorByMatrix(DirectX::XMFLOAT3* _vector, DirectX::XMFLOAT4X4 _matrix)
