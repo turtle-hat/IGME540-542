@@ -18,6 +18,7 @@ Foliage::Foliage(const char* _name, std::shared_ptr<Material> _branchMaterial, s
 	transform = _transform;
 
 	GenerateBranchMesh();
+	GenerateLeafMesh();
 }
 
 Foliage::Foliage(const char* _name, std::shared_ptr<Material> _branchMaterial, std::shared_ptr<Material> _leafMaterial, FoliageParams _params) :
@@ -86,6 +87,7 @@ void Foliage::SetParams(FoliageParams _params)
 {
 	params = _params;
 	GenerateBranchMesh();
+	GenerateLeafMesh();
 }
 
 void Foliage::GenerateBranchMesh()
@@ -220,7 +222,7 @@ void Foliage::GenerateBranchMesh()
 	//AddNodeQuadVertices(&vertices, &vertexCount, &indices, &indexCount, root);
 
 	// FINAL STEP: Make Mesh object
-	branchMesh = make_shared<Mesh>("M_Foliage_Generated", vertices.data(), vertexCount, indices.data(), indexCount);
+	branchMesh = make_shared<Mesh>("M_FoliageBranch_Generated", vertices.data(), vertexCount, indices.data(), indexCount);
 }
 
 void Foliage::GenerateLeafMesh()
@@ -280,6 +282,10 @@ void Foliage::GenerateLeafMesh()
 			//angle = fmod(angle, XM_2PI);
 		}
 	}
+
+	// FINAL STEP: Make Mesh object
+	leafMesh = make_shared<Mesh>("M_FoliageLeaves_Generated", vertices.data(), vertexCount, indices.data(), indexCount);
+
 }
 
 void Foliage::TransformVectorByMatrix(DirectX::XMFLOAT3* _vector, DirectX::XMFLOAT4X4 _matrix)
@@ -504,7 +510,7 @@ void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 
 	XMStoreFloat4x4(&tfLeaf,
 		XMLoadFloat4x4(&_node.tfLocal) *
-		XMMatrixTranslation(0.5f + branchDistance, 0.0f, 0.5f + branchDistance) *
+		XMMatrixTranslation(0.5f + branchDistance, _distance, -0.5f - branchDistance) *
 		XMMatrixRotationRollPitchYaw(0.0f, _angle, 0.0f)
 	);
 		

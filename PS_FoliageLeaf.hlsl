@@ -20,9 +20,9 @@ cbuffer PrimaryBuffer : register(b0)
     float padding;
 }
 
-Texture2D MapAlbedoAlpha : register(t0); // "t" registers for textures
+Texture2D MapAlbedoAlpha	 : register(t0); // "t" registers for textures
 Texture2D MapNormalRoughness : register(t1);
-Texture2D MapShadow : register(t2);
+Texture2D MapShadow			 : register(t2);
 
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
 SamplerComparisonState ShadowSampler : register(s1);

@@ -183,7 +183,7 @@ void Game::CreateMaterials()
 	AddTexture(L"../../Assets/Textures/Foliage/T_Branch_AM.png");
 	AddTexture(L"../../Assets/Textures/Foliage/T_Branch_NR.png");
 	AddTexture(L"../../Assets/Textures/Foliage/T_Leaf_A.png");
-	AddTexture(L"../../Assets/Textures/Foliage/T_Leaf_N.png");
+	AddTexture(L"../../Assets/Textures/Foliage/T_Leaf_NR.png");
 
 
 
@@ -256,9 +256,10 @@ void Game::CreateMaterials()
 	materials[13]->AddTextureSRV("MapNormalRoughness", textures[22]);
 	materials[13]->AddSampler("BasicSampler", samplerState);
 
-	AddPBRMaterial("Mat_FoliageLeaf_PBR", vsFoliageLeaf, psFoliageLeaf, 1.0f, 0.0f);
+	AddPBRMaterial("Mat_FoliageLeaf_PBR", vsPBR, psFoliageLeaf, 1.0f, 0.0f);
 	materials[14]->AddTextureSRV("MapAlbedoAlpha", textures[23]);
 	materials[14]->AddTextureSRV("MapNormal", textures[24]);
+	materials[14]->AddSampler("BasicSampler", samplerState);
 	materials[14]->SetAlphaThreshold(0.5f);
 	materials[14]->useAlphaThreshold = true;
 
@@ -425,7 +426,7 @@ void Game::CreateFoliage()
 	fParams.leafWidthMultiplier			= 0.8f;
 	fParams.leafAngleChange				= GOLDEN_ANGLE;
 	fParams.leafAngleChangeVariance		= 0.2f;
-	auto fTree = make_shared<Foliage>("F_Tree", materials[13], materials[1], fParams);
+	auto fTree = make_shared<Foliage>("F_Tree", materials[13], materials[14], fParams);
 	fTree->GetTransform()->MoveAbsolute(0.0f, -2.0f, -2.0f);
 	foliages.push_back(fTree);
 }
@@ -545,7 +546,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// Draw both the foliage's meshes
 		foliages[i]->GetBranchMesh()->Draw();
-		//foliages[i]->GetLeafMesh()->Draw();
+		foliages[i]->GetLeafMesh()->Draw();
 	}
 
 	// Reset viewport, render target, depth buffer, and rasterizer state for normal rendering
@@ -779,7 +780,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		psLeaf->CopyAllBufferData();
 
 		// Draw the entity's leaf mesh
-		//foliages[i]->GetLeafMesh()->Draw();
+		foliages[i]->GetLeafMesh()->Draw();
 
 		// Reset rasterizer state
 		Graphics::Context->RSSetState(0);
@@ -1755,6 +1756,17 @@ void Game::ImGuiBuild() {
 					}
 				}
 
+				// Only display alpha threshold if the material uses it
+				if (materials[i]->useAlphaThreshold) {
+					float alphaThreshold = materials[i]->GetAlphaThreshold();
+					// If the user has edited the material's alpha threshold this frame, change the material's alpha threshold
+					if (ImGui::SliderFloat("Alpha Threshold", &alphaThreshold, 0.0f, 1.0f, "%.2f")) {
+						materials[i]->SetAlphaThreshold(alphaThreshold);
+					}
+				}
+
+
+
 				// If any textures exist, include texture settings
 				if (textures.size() > 0) {
 					if (ImGui::DragFloat2("UV Position", (float*)&uv_pos, 0.01f, NULL, NULL, "%.2f")) {
@@ -2290,7 +2302,7 @@ void Game::ImGuiBuild() {
 					}
 					ImGui::SetItemTooltip("(CURRENTLY NONFUNCTIONAL)\nWidth of random range for split angle");
 
-					if (ImGui::DragFloat("Leaf Distance", &params.leafDistance, 0.1f, 0.0f, FLT_MAX, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+					if (ImGui::DragFloat("Leaf Distance", &params.leafDistance, 0.1f, 0.1f, FLT_MAX, "%.2f")) {
 						params.leafDistanceVariance = min(params.leafDistanceVariance, params.leafDistance);
 						paramsDirty = true;
 					}
