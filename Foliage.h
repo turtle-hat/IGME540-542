@@ -201,6 +201,8 @@ private:
 		unsigned int* _indexCount,
 		const FoliageNode& _node,
 		float _distance,
+		float _branchWidth,
+		float _leafSize,
 		float _angle
 	);
 
@@ -239,6 +241,9 @@ private:
 	};
 	// Indices for making a new quad
 	const unsigned int QUAD_INDICES[6] = { 1, 2, 0, 1, 3, 2 };
+
+	// Indices for making a new leaf quad
+	const unsigned int LEAF_QUAD_INDICES[6] = { 0, 3, 2, 0, 1, 3 };
 
 
 

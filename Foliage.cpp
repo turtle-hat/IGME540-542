@@ -232,28 +232,52 @@ void Foliage::GenerateLeafMesh()
 
 	// Find the distance to the first leaf
 	float leafDistance = params.leafDistance + RandomRange(params.leafDistanceVariance);
-	// Angle accumulator
-	float angle = 0.0f;
+	// Angle accumulator (start at random angle)
+	float angle = (float)rand() / RAND_MAX * XM_2PI;
 
 	// Loop through each foliage node
 	for (const FoliageNode& node : nodes) {
 		// Break if the node doesn't have a parent (ie. is the root)
 		if (node.parent == nullptr) continue;
 
-		// Subtract the segment's length from the leaves distance
-		leafDistance -= node.totalLength - node.parent->totalLength;
+		// Get the length of this node's segment
+		float parentTotalLength = node.parent->totalLength;
+		float segmentLength = node.totalLength - parentTotalLength;
+
+		// Subtract the segment's length from the leaf's distance
+		leafDistance -= segmentLength;
 
 		// If the segment's length is greater than the leaf distance, make a new leaf quad
 		while (leafDistance < 0.0f) {
-			AddLeafQuadVertices(&vertices, &vertexCount, &indices, &indexCount, node, leafDistance, angle);
+			// First, calculate how wide the branch is at this point
+			float percentDistanceFromParent = 1.0f + (leafDistance / segmentLength);
+			float branchWidth = lerp(node.parent->width, node.width, percentDistanceFromParent);
+
+			// Calculate the size of this leaf
+			float leafSize = (params.leafWidth + RandomRange(params.leafWidthVariance)) *
+				powf(params.leafWidthMultiplier, (float)node.iteration);
+
+			// Add the vertex (from the child node)
+			AddLeafQuadVertices(
+				&vertices,
+				&vertexCount,
+				&indices,
+				&indexCount,
+				node,
+				leafDistance,
+				branchWidth,
+				leafSize,
+				angle
+			);
 
 			// Add distance for another leaf; if it's still not enough, a new leaf will be created after it
 			leafDistance +=
 				(params.leafDistance + RandomRange(params.leafDistanceVariance)) *
-				powf(params.segmentLengthMultiplier, (float)node.iteration);
+				powf(params.leafDistanceMultiplier, (float)node.iteration);
 
 			// Add angle
 			angle += params.leafAngleChange + RandomRange(params.leafAngleChangeVariance);
+			//angle = fmod(angle, XM_2PI);
 		}
 	}
 }
@@ -459,7 +483,7 @@ void Foliage::AddEndCapIndicesHardEdge(std::vector<UINT>* _indices, unsigned int
 	*_indexCount += 12;
 }
 
-void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node, float _distance, float _angle)
+void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node, float _distance, float _branchWidth, float _leafSize, float _angle)
 {
 	// Get new quad vertices
 	Vertex newVerts[4] = {
@@ -469,11 +493,19 @@ void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 		QUAD_V3
 	};
 
+	// Calculate the matrix to move each vertex by
+	// 1. Translate to place the leaf on the edge of the branch
+	// 2. Rotate by _angle
+	// 3. Move downwards by _distance
+
+	XMMATRIX tfLeaf = XMLoadFloat4x4(&_node.tfLocal);
+
 	for (Vertex newVert : newVerts) {
+
 		// Transform all vertices' positions and normals by the vector,
 		// scaling the quad vertices' position by the node's width first
 		// (there's probably a more efficient way to do this)
-		ScaleAndTransformVectorByMatrix(&newVert.Position, _node.tfLocal, _node.width);
+		ScaleAndTransformVectorByMatrix(&newVert.Position, _node.tfLocal, _leafSize);
 		TransformVectorByMatrix(&newVert.Normal, _node.tfLocal);
 
 		// Add vertices to vertex vector and add 4 to vertexCount
@@ -483,7 +515,7 @@ void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 	// Add indices of the quad to the index vector and add 6 to indexCount
 	unsigned int initialVertexCount = *_vertexCount;
 	for (int i = 0; i < 6; i++) {
-		_indices->push_back(QUAD_INDICES[i] + initialVertexCount);
+		_indices->push_back(LEAF_QUAD_INDICES[i] + initialVertexCount);
 	}
 	*_vertexCount += 4;
 	*_indexCount += 6;
