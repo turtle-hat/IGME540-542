@@ -494,19 +494,27 @@ void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 	};
 
 	// Calculate the matrix to move each vertex by
-	// 1. Translate to place the leaf on the edge of the branch
-	// 2. Rotate by _angle
-	// 3. Move downwards by _distance
+	// 1. Translating to place the leaf on the edge of the branch
+	//    and also translating downwards by _distance
+	// 2. Rotating by _angle
 
-	XMMATRIX tfLeaf = XMLoadFloat4x4(&_node.tfLocal);
+	float branchDistance = _branchWidth / sqrt(2);
 
+	XMFLOAT4X4 tfLeaf;
+
+	XMStoreFloat4x4(&tfLeaf,
+		XMLoadFloat4x4(&_node.tfLocal) *
+		XMMatrixTranslation(0.5f + branchDistance, 0.0f, 0.5f + branchDistance) *
+		XMMatrixRotationRollPitchYaw(0.0f, _angle, 0.0f)
+	);
+		
 	for (Vertex newVert : newVerts) {
 
 		// Transform all vertices' positions and normals by the vector,
 		// scaling the quad vertices' position by the node's width first
 		// (there's probably a more efficient way to do this)
-		ScaleAndTransformVectorByMatrix(&newVert.Position, _node.tfLocal, _leafSize);
-		TransformVectorByMatrix(&newVert.Normal, _node.tfLocal);
+		ScaleAndTransformVectorByMatrix(&newVert.Position, tfLeaf, _leafSize);
+		TransformVectorByMatrix(&newVert.Normal, tfLeaf);
 
 		// Add vertices to vertex vector and add 4 to vertexCount
 		_vertices->push_back(newVert);
