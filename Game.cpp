@@ -545,7 +545,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		// Draw both the foliage's meshes
 		foliages[i]->GetBranchMesh()->Draw();
-		foliages[i]->GetLeafMesh()->Draw();
+		//foliages[i]->GetLeafMesh()->Draw();
 	}
 
 	// Reset viewport, render target, depth buffer, and rasterizer state for normal rendering
@@ -779,7 +779,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		psLeaf->CopyAllBufferData();
 
 		// Draw the entity's leaf mesh
-		foliages[i]->GetLeafMesh()->Draw();
+		//foliages[i]->GetLeafMesh()->Draw();
 
 		// Reset rasterizer state
 		Graphics::Context->RSSetState(0);
@@ -2307,14 +2307,14 @@ void Game::ImGuiBuild() {
 					ImGui::SetItemTooltip("Multiplied to leaf width after each segment");
 
 					float leafAngleChangeDegrees = params.leafAngleChange * XM_1DIVPI * 180.0f;
-					if (ImGui::DragFloat("Leaf Angle Change", &leafAngleChangeDegrees, 0.01f, 0.0f, FLT_MAX, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+					if (ImGui::DragFloat("Leaf Angle Change", &leafAngleChangeDegrees, 0.1f, -FLT_MAX, FLT_MAX, "%.2f")) {
 						params.leafAngleChange = leafAngleChangeDegrees * XM_PI / 180.0f;
 						paramsDirty = true;
 					}
 					ImGui::SetItemTooltip("Average rotation added between each leaf segment, in degrees");
 
 					float leafAngleChangeVarianceDegrees = params.leafAngleChangeVariance * XM_1DIVPI * 180.0f;
-					if (ImGui::SliderFloat("Leaf Angle Change Variance", &params.leafAngleChangeVariance, -360, 360, "%.2f")) {
+					if (ImGui::SliderFloat("Leaf Angle Change Variance", &leafAngleChangeVarianceDegrees, -360, 360, "%.2f")) {
 						params.leafAngleChangeVariance = leafAngleChangeVarianceDegrees * XM_PI / 180.0f;
 						paramsDirty = true;
 					}
