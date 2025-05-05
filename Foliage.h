@@ -67,9 +67,9 @@ struct FoliageParams {
 										// as radians from directly upwards
 	float splitAngleVariance;			// Width of random range for split angle
 
-	float leavesPerSegment;				// Average number of leaf quads to be created for each segment
-	float leavesPerSegmentVariance;		// Width of random range for leaf count on a given segment
-	float leavesPerSegmentMultiplier;	// Multiplied to leaf count after each segment
+	float leafDistance;					// Average distance between leaf quads on a branch
+	float leafDistanceVariance;			// Width of random range for leaf distance
+	float leafDistanceMultiplier;		// Multiplied to leaf distance after each segment
 
 	float leafWidth;					// Average width for each leaf quad
 	float leafWidthVariance;			// Width of random range for leaf width
@@ -82,6 +82,7 @@ struct FoliageParams {
 };
 
 struct FoliageNode {
+	FoliageNode* parent;				// Pointer to parent node
 	DirectX::XMFLOAT4X4 tfLocal;		// The local transformation of this node from the root
 	unsigned int iteration;				// How many nodes away from the root node this is
 	unsigned int verticesStart;			// The index, in the Mesh's vertex array,
@@ -90,7 +91,7 @@ struct FoliageNode {
 										// of the first vertex created by this node
 	float width;						// The width the ring around this node should be
 	float totalLength;					// The total length accumulated by this node and its ancestors
-	bool isFinal;							// Whether this node should be an end cap
+	bool isFinal;						// Whether this node should be an end cap
 };
 
 
@@ -154,7 +155,7 @@ private:
 	);
 	// Extends a new node off a given previous node
 	FoliageNode BuildNodeFromParent(
-		const FoliageNode& _parent, 
+		FoliageNode* _parent, 
 		unsigned int* _vertexCount, 
 		unsigned int* _indexCount
 	);
@@ -193,12 +194,14 @@ private:
 		unsigned int _childNodeFirstVertex
 	);
 	// Adds a new quad of four vertices to the mesh, centered around a Node, and the necessary indices for it
-	void AddFoliageQuadVertices(
+	void AddLeafQuadVertices(
 		std::vector<Vertex>* _vertices,
 		unsigned int* _vertexCount,
 		std::vector<UINT>* _indices,
 		unsigned int* _indexCount,
-		const FoliageNode& _node
+		const FoliageNode& _node,
+		float _distance,
+		float _angle
 	);
 
 

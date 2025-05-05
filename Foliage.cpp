@@ -153,6 +153,7 @@ void Foliage::GenerateBranchMesh()
 
 	// Create root node
 	FoliageNode root = {
+		nullptr,
 		XMFLOAT4X4(				// tfLocal
 			rootRight.x,	rootRight.y,	rootRight.z,	0.0f,
 			rootUp.x,		rootUp.y,		rootUp.z,		0.0f,
@@ -178,7 +179,7 @@ void Foliage::GenerateBranchMesh()
 		FoliageNode parent = nodesToBuild.front();
 		nodesToBuild.pop();
 
-		FoliageNode child = BuildNodeFromParent(parent, &vertexCount, &indexCount);
+		FoliageNode child = BuildNodeFromParent(&parent, &vertexCount, &indexCount);
 		nodes.push_back(child);
 		
 		// If child is final, add end cap
@@ -224,6 +225,37 @@ void Foliage::GenerateBranchMesh()
 
 void Foliage::GenerateLeafMesh()
 {
+	vector<Vertex> vertices;		// Generated vertices
+	vector<UINT> indices;			// Generated indices
+	unsigned int vertexCount = 0;	// Counter for vertices
+	unsigned int indexCount = 0;	// Counter for indices
+
+	// Find the distance to the first leaf
+	float leafDistance = params.leafDistance + RandomRange(params.leafDistanceVariance);
+	// Angle accumulator
+	float angle = 0.0f;
+
+	// Loop through each foliage node
+	for (const FoliageNode& node : nodes) {
+		// Break if the node doesn't have a parent (ie. is the root)
+		if (node.parent == nullptr) continue;
+
+		// Subtract the segment's length from the leaves distance
+		leafDistance -= node.totalLength - node.parent->totalLength;
+
+		// If the segment's length is greater than the leaf distance, make a new leaf quad
+		while (leafDistance < 0.0f) {
+			AddLeafQuadVertices(&vertices, &vertexCount, &indices, &indexCount, node, leafDistance, angle);
+
+			// Add distance for another leaf; if it's still not enough, a new leaf will be created after it
+			leafDistance +=
+				(params.leafDistance + RandomRange(params.leafDistanceVariance)) *
+				powf(params.segmentLengthMultiplier, (float)node.iteration);
+
+			// Add angle
+			angle += params.leafAngleChange + RandomRange(params.leafAngleChangeVariance);
+		}
+	}
 }
 
 void Foliage::TransformVectorByMatrix(DirectX::XMFLOAT3* _vector, DirectX::XMFLOAT4X4 _matrix)
@@ -238,10 +270,12 @@ void Foliage::ScaleAndTransformVectorByMatrix(DirectX::XMFLOAT3* _vector, Direct
 		XMLoadFloat4x4(&_matrix)));
 }
 
-FoliageNode Foliage::BuildNodeFromParent(const FoliageNode& _parent, unsigned int* _vertexCount, unsigned int* _indexCount)
+FoliageNode Foliage::BuildNodeFromParent(FoliageNode* _parent, unsigned int* _vertexCount, unsigned int* _indexCount)
 {
 	// Use parent's data as a template
-	FoliageNode result = _parent;
+	FoliageNode result = *_parent;
+
+	result.parent = _parent;
 
 	// Get growth direction from parent's up vector
 	XMFLOAT3 growthDirection(
@@ -468,9 +502,29 @@ void Foliage::AddEndCapIndicesHardEdge(std::vector<UINT>* _indices, unsigned int
 	*_indexCount += 12;
 }
 
-void Foliage::AddFoliageQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node)
+void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node, float _distance, float _angle)
 {
+	// Get new quad vertices
+	Vertex newVerts[4] = { QUAD_V0, QUAD_V1, QUAD_V2, QUAD_V3 };
 
+	for (Vertex newVert : newVerts) {
+		// Transform all vertices' positions and normals by the vector,
+		// scaling the quad vertices' position by the node's width first
+		// (there's probably a more efficient way to do this)
+		ScaleAndTransformVectorByMatrix(&newVert.Position, _node.tfLocal, _node.width);
+		TransformVectorByMatrix(&newVert.Normal, _node.tfLocal);
+
+		// Add vertices to vertex vector and add 4 to vertexCount
+		_vertices->push_back(newVert);
+	}
+
+	// Add indices of the quad to the index vector and add 6 to indexCount
+	unsigned int initialVertexCount = *_vertexCount;
+	for (int i = 0; i < 6; i++) {
+		_indices->push_back(QUAD_INDICES[i] + initialVertexCount);
+	}
+	*_vertexCount += 4;
+	*_indexCount += 6;
 }
 
 
