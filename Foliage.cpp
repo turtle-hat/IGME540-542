@@ -468,4 +468,9 @@ void Foliage::AddEndCapIndicesHardEdge(std::vector<UINT>* _indices, unsigned int
 	*_indexCount += 12;
 }
 
+void Foliage::AddFoliageQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node)
+{
+
+}
+
 

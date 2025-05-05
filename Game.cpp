@@ -423,6 +423,8 @@ void Game::CreateFoliage()
 	fParams.leafWidth					= 5.0f;
 	fParams.leafWidthVariance			= 2.0f;
 	fParams.leafWidthMultiplier			= 0.8f;
+	fParams.leafAngleChange				= GOLDEN_ANGLE;
+	fParams.leafAngleChangeVariance		= 0.2f;
 	auto fTree = make_shared<Foliage>("F_Tree", materials[13], materials[1], fParams);
 	fTree->GetTransform()->MoveAbsolute(0.0f, -2.0f, -2.0f);
 	foliages.push_back(fTree);
@@ -2287,6 +2289,36 @@ void Game::ImGuiBuild() {
 						paramsDirty = true;
 					}
 					ImGui::SetItemTooltip("[CURRENTLY NONFUNCTIONAL]\nWidth of random range for split angle");
+
+					if (ImGui::DragFloat("Leaf Width", &params.leafWidth, 0.01f, 0.0f, FLT_MAX, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+						params.leafWidthVariance = min(params.leafWidthVariance, params.leafWidth);
+						paramsDirty = true;
+					}
+					ImGui::SetItemTooltip("Average width for each leaf quad");
+
+					if (ImGui::SliderFloat("Leaf Width Variance", &params.leafWidthVariance, 0.0f, params.leafWidth, "%.2f")) {
+						paramsDirty = true;
+					}
+					ImGui::SetItemTooltip("Width of random range for leaf width");
+
+					if (ImGui::DragFloat("Leaf Width Multiplier", &params.leafWidthMultiplier, 0.01f, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+						paramsDirty = true;
+					}
+					ImGui::SetItemTooltip("Multiplied to leaf width after each segment");
+
+					float leafAngleChangeDegrees = params.leafAngleChange * XM_1DIVPI * 180.0f;
+					if (ImGui::DragFloat("Leaf Angle Change", &leafAngleChangeDegrees, 0.01f, 0.0f, FLT_MAX, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+						params.leafAngleChange = leafAngleChangeDegrees * XM_PI / 180.0f;
+						paramsDirty = true;
+					}
+					ImGui::SetItemTooltip("Average rotation added between each leaf segment, in degrees");
+
+					float leafAngleChangeVarianceDegrees = params.leafAngleChangeVariance * XM_1DIVPI * 180.0f;
+					if (ImGui::SliderFloat("Leaf Angle Change Variance", &params.leafAngleChangeVariance, -360, 360, "%.2f")) {
+						params.leafAngleChangeVariance = leafAngleChangeVarianceDegrees * XM_PI / 180.0f;
+						paramsDirty = true;
+					}
+					ImGui::SetItemTooltip("Width of random range for leaf angle change");
 
 					// If the user has changed any parameters, set them
 					if (paramsDirty) {

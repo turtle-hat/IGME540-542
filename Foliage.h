@@ -10,6 +10,7 @@
 #include "Mesh.h"
 
 
+// Notes:
 
 /*
 RELATIVE TRANSLATION AXES		RELATIVE ROTATION AXES
@@ -39,6 +40,9 @@ SPLIT GENERATION VERTEX NAMES
 		 / /    /
 		/ /    /
 */
+
+// Optimal phyllotaxis angle
+const float GOLDEN_ANGLE = DirectX::XM_PI * (3.0f - std::sqrt(5.0f));
 
 struct FoliageParams {
 	unsigned int seed;					// Random seed
@@ -70,6 +74,9 @@ struct FoliageParams {
 	float leafWidth;					// Average width for each leaf quad
 	float leafWidthVariance;			// Width of random range for leaf width
 	float leafWidthMultiplier;			// Multiplied to leaf width after each segment
+	
+	float leafAngleChange;				// Average rotation added between each leaf segment, in radians
+	float leafAngleChangeVariance;		// Width of random range for leaf angle change
 
 	//DirectX::XMFLOAT3 gravity;		// Vector added to the angle of each branch
 };
@@ -113,7 +120,6 @@ public:
 	void SetBranchMaterial(std::shared_ptr<Material> _material);
 	void SetLeafMaterial(std::shared_ptr<Material> _material);
 	void SetParams(FoliageParams _params);
-
 private:
 	// User-defined fields
 	std::shared_ptr<Mesh> branchMesh;
@@ -185,6 +191,14 @@ private:
 		unsigned int* _indexCount,
 		unsigned int _parentNodeFirstVertex,
 		unsigned int _childNodeFirstVertex
+	);
+	// Adds a new quad of four vertices to the mesh, centered around a Node, and the necessary indices for it
+	void AddFoliageQuadVertices(
+		std::vector<Vertex>* _vertices,
+		unsigned int* _vertexCount,
+		std::vector<UINT>* _indices,
+		unsigned int* _indexCount,
+		const FoliageNode& _node
 	);
 
 
