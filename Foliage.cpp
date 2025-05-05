@@ -327,28 +327,23 @@ FoliageNode Foliage::BuildNodeFromParent(FoliageNode* _parent, unsigned int* _ve
 void Foliage::AddNodeQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node)
 {
 	// Get new quad vertices
-	Vertex v0 = QUAD_V0;
-	Vertex v1 = QUAD_V1;
-	Vertex v2 = QUAD_V2;
-	Vertex v3 = QUAD_V3;
+	Vertex newVerts[4] = {
+		QUAD_V0,
+		QUAD_V1,
+		QUAD_V2,
+		QUAD_V3
+	};
 
-	// Transform all vertices' positions and normals by the vector,
-	// scaling the quad vertices' position by the node's width first
-	// (there's probably a more efficient way to do this)
-	ScaleAndTransformVectorByMatrix(&v0.Position, _node.tfLocal, _node.width);
-	ScaleAndTransformVectorByMatrix(&v1.Position, _node.tfLocal, _node.width);
-	ScaleAndTransformVectorByMatrix(&v2.Position, _node.tfLocal, _node.width);
-	ScaleAndTransformVectorByMatrix(&v3.Position, _node.tfLocal, _node.width);
-	TransformVectorByMatrix(&v0.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v1.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v2.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v3.Normal, _node.tfLocal);
-
-	// Add vertices to vertex vector and add 4 to vertexCount
-	_vertices->push_back(v0);
-	_vertices->push_back(v1);
-	_vertices->push_back(v2);
-	_vertices->push_back(v3);
+	for (Vertex newVert : newVerts) {
+		// Transform all vertices' positions and normals by the vector,
+		// scaling the quad vertices' position by the node's width first
+		// (would be more efficient in a compute shader)
+		ScaleAndTransformVectorByMatrix(&newVert.Position, _node.tfLocal, _node.width);
+		TransformVectorByMatrix(&newVert.Normal, _node.tfLocal);
+	
+		// Add vertices to vertex vector and add 4 to vertexCount
+		_vertices->push_back(newVert);
+	};
 
 	// Add indices of the quad to the index vector and add 6 to indexCount
 	unsigned int initialVertexCount = *_vertexCount;
@@ -362,33 +357,16 @@ void Foliage::AddNodeQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 void Foliage::AddNodeRingVerticesHardEdge(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, const FoliageNode& _node)
 {
 	// Get new quad vertices
-	Vertex v0to1 = RING_V0TO1;
-	Vertex v1to0 = RING_V1TO0;
-	Vertex v1to2 = RING_V1TO2;
-	Vertex v2to1 = RING_V2TO1;
-	Vertex v2to3 = RING_V2TO3;
-	Vertex v3to2 = RING_V3TO2;
-	Vertex v3to0 = RING_V3TO0;
-	Vertex v0to3 = RING_V0TO3;
-
-	// Transform all vertices' positions and normals by the vector,
-	// scaling the ring vertices' position by the node's width first
-	ScaleAndTransformVectorByMatrix(&v0to1.Position, _node.tfLocal, _node.width);
-	ScaleAndTransformVectorByMatrix(&v1to0.Position, _node.tfLocal, _node.width);
-	ScaleAndTransformVectorByMatrix(&v1to2.Position, _node.tfLocal, _node.width);
-	ScaleAndTransformVectorByMatrix(&v2to1.Position, _node.tfLocal, _node.width);
-	ScaleAndTransformVectorByMatrix(&v2to3.Position, _node.tfLocal, _node.width);
-	ScaleAndTransformVectorByMatrix(&v3to2.Position, _node.tfLocal, _node.width);
-	ScaleAndTransformVectorByMatrix(&v3to0.Position, _node.tfLocal, _node.width);
-	ScaleAndTransformVectorByMatrix(&v0to3.Position, _node.tfLocal, _node.width);
-	TransformVectorByMatrix(&v0to1.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v1to0.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v1to2.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v2to1.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v2to3.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v3to2.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v3to0.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v0to3.Normal, _node.tfLocal);
+	Vertex newVerts[8] = {
+		RING_V0TO1,
+		RING_V1TO0,
+		RING_V1TO2,
+		RING_V2TO1,
+		RING_V2TO3,
+		RING_V3TO2,
+		RING_V3TO0,
+		RING_V0TO3
+	};
 
 	// Three conditions can decrease the texture V coordinate of a node's vertices (i.e. move up the texture):
 	// 1. width equaling 0.0f (if true, always set V to 0.0f)
@@ -401,24 +379,18 @@ void Foliage::AddNodeRingVerticesHardEdge(std::vector<Vertex>* _vertices, unsign
 		1.0f - min(max(vIteration, vLength), 1.0f)
 		: 0.0f;
 
-	v0to1.UV.y = vFinal;
-	v1to0.UV.y = vFinal;
-	v1to2.UV.y = vFinal;
-	v2to1.UV.y = vFinal;
-	v2to3.UV.y = vFinal;
-	v3to2.UV.y = vFinal;
-	v3to0.UV.y = vFinal;
-	v0to3.UV.y = vFinal;
+	for (Vertex newVert : newVerts) {
+		// Transform all vertices' positions and normals by the vector,
+		// scaling the ring vertices' position by the node's width first
+		ScaleAndTransformVectorByMatrix(&newVert.Position, _node.tfLocal, _node.width);
+		TransformVectorByMatrix(&newVert.Normal, _node.tfLocal);
 
-	// Add vertices to vertex vector and add 4 to vertexCount
-	_vertices->push_back(v0to1);
-	_vertices->push_back(v1to0);
-	_vertices->push_back(v1to2);
-	_vertices->push_back(v2to1);
-	_vertices->push_back(v2to3);
-	_vertices->push_back(v3to2);
-	_vertices->push_back(v3to0);
-	_vertices->push_back(v0to3);
+		newVert.UV.y = vFinal;
+
+		// Add vertices to vertex vector and add 4 to vertexCount
+		_vertices->push_back(newVert);
+	}
+
 	*_vertexCount += 8;
 }
 
@@ -446,39 +418,24 @@ void Foliage::AddSegmentIndicesHardEdge(std::vector<UINT>* _indices, unsigned in
 void Foliage::AddNodeEndCapVerticesHardEdge(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, const FoliageNode& _node)
 {
 	// Get new quad vertices
-	Vertex v0 = END_CAP_V0;
-	Vertex v1 = END_CAP_V1;
-	Vertex v2 = END_CAP_V2;
-	Vertex v3 = END_CAP_V3;
+	Vertex newVerts[4] = {
+		END_CAP_V0,
+		END_CAP_V1,
+		END_CAP_V2,
+		END_CAP_V3
+	};
 
-	// Transform all vertices' positions and normals by the vector,
-	// scaling the quad vertices' position by the node's width first
-	// (there's probably a more efficient way to do this)
-	TransformVectorByMatrix(&v0.Position, _node.tfLocal);
-	TransformVectorByMatrix(&v1.Position, _node.tfLocal);
-	TransformVectorByMatrix(&v2.Position, _node.tfLocal);
-	TransformVectorByMatrix(&v3.Position, _node.tfLocal);
-	TransformVectorByMatrix(&v0.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v1.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v2.Normal, _node.tfLocal);
-	TransformVectorByMatrix(&v3.Normal, _node.tfLocal);
+	for (Vertex newVert : newVerts) {
+		// Transform all vertices' positions and normals by the vector,
+		// scaling the quad vertices' position by the node's width first
+		// (there's probably a more efficient way to do this)
+		TransformVectorByMatrix(&newVert.Position, _node.tfLocal);
+		TransformVectorByMatrix(&newVert.Normal, _node.tfLocal);
 
-	// Three conditions can decrease the texture V coordinate of a node's vertices (i.e. move up the texture):
-	// 1. width equaling 0.0f (if true, always set V to 0.0f)
-	// 2. iteration approaching maxIteration
-	// 3. totalLength approaching maxLength
-	// Whichever is the highest gets subtracted from 1.0f to become the new V coordinate
-	float vIteration = (float)_node.iteration / params.maxIterations; // 2.
-	float vLength = (float)_node.totalLength / params.maxLength; // 3.
-	float vFinal = _node.width > 0.0f ? // 1.
-		1.0f - min(max(vIteration, vLength), 1.0f)
-		: 0.0f;
+		// Add vertices to vertex vector and add 4 to vertexCount
+		_vertices->push_back(newVert);
+	}
 
-	// Add vertices to vertex vector and add 4 to vertexCount
-	_vertices->push_back(v0);
-	_vertices->push_back(v1);
-	_vertices->push_back(v2);
-	_vertices->push_back(v3);
 	*_vertexCount += 4;
 }
 
@@ -505,7 +462,12 @@ void Foliage::AddEndCapIndicesHardEdge(std::vector<UINT>* _indices, unsigned int
 void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* _vertexCount, std::vector<UINT>* _indices, unsigned int* _indexCount, const FoliageNode& _node, float _distance, float _angle)
 {
 	// Get new quad vertices
-	Vertex newVerts[4] = { QUAD_V0, QUAD_V1, QUAD_V2, QUAD_V3 };
+	Vertex newVerts[4] = {
+		QUAD_V0,
+		QUAD_V1,
+		QUAD_V2,
+		QUAD_V3
+	};
 
 	for (Vertex newVert : newVerts) {
 		// Transform all vertices' positions and normals by the vector,
