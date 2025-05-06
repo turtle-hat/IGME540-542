@@ -258,7 +258,7 @@ void Game::CreateMaterials()
 
 	AddPBRMaterial("Mat_FoliageLeaf_PBR", vsPBR, psFoliageLeaf, 1.0f, 0.0f);
 	materials[14]->AddTextureSRV("MapAlbedoAlpha", textures[23]);
-	materials[14]->AddTextureSRV("MapNormal", textures[24]);
+	materials[14]->AddTextureSRV("MapNormalRoughness", textures[24]);
 	materials[14]->AddSampler("BasicSampler", samplerState);
 	materials[14]->SetAlphaThreshold(0.5f);
 	materials[14]->useAlphaThreshold = true;
@@ -1085,7 +1085,7 @@ void Game::AddPBRMaterial(const char* _name, std::shared_ptr<SimpleVertexShader>
 
 void Game::AddPBRMaterial(const char* _name, std::shared_ptr<SimpleVertexShader> _vertexShader, std::shared_ptr<SimplePixelShader> _pixelShader, float _roughness, float _metalness)
 {
-	AddPBRMaterial(_name, _vertexShader, _pixelShader, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 1.0f, 1.0f);
+	AddPBRMaterial(_name, _vertexShader, _pixelShader, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), _roughness, _metalness);
 }
 
 // --------------------------------------------------------
