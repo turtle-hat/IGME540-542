@@ -337,9 +337,8 @@ std::shared_ptr<FoliageNode> Foliage::BuildNodeFromParent(std::shared_ptr <Folia
 	// If 0 or lower, set as final and clamp to 0
 	if (segmentWidth <= 0.0f) {
 		result.isFinal = true;
-		segmentWidth = 0.0f;
 	}
-	result.width = segmentWidth;
+	result.width = result.isFinal ? 0.0f : segmentWidth;
 
 	// Scale growth direction by segment length and translate by that vector
 	XMStoreFloat4x4(&result.tfLocal, XMMatrixMultiply(
@@ -509,15 +508,15 @@ void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 	//    and also translating downwards by _distance
 	// 2. Rotating by _angle
 
-	float branchDistance = 0.5f + _branchWidth / sqrtf(2);
+	float branchDistance = 0.5f * (_leafSize + _branchWidth / sqrtf(2));
 
 	XMFLOAT4X4 tfLeaf;
 
 	XMStoreFloat4x4(&tfLeaf,
-		XMLoadFloat4x4(&_node.tfLocal) *
+		XMMatrixScaling(_leafSize, _leafSize, _leafSize) *
 		XMMatrixTranslation(branchDistance, _distance, -branchDistance) *
-		XMMatrixRotationRollPitchYaw(0.0f, _angle, 0.0f)
-		//XMMatrixScaling(_leafSize, _leafSize, _leafSize) *
+		XMMatrixRotationRollPitchYaw(0.0f, _angle, 0.0f) *
+		XMLoadFloat4x4(&_node.tfLocal)
 	);
 		
 	for (Vertex newVert : newVerts) {
