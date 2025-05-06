@@ -63,14 +63,14 @@ const char* Foliage::GetName()
 	return name;
 }
 
-FoliageNode Foliage::GetRootNode()
+std::shared_ptr<FoliageNode> Foliage::GetRootNode()
 {
-	return nodes.size() > 0 ? nodes[0] : FoliageNode{};
+	return nodes.size() > 0 ? nodes[0] : 0;
 }
 
-FoliageNode Foliage::GetNode(unsigned int _index)
+std::shared_ptr<FoliageNode> Foliage::GetNode(unsigned int _index)
 {
-	return nodes.size() > _index ? nodes[_index] : FoliageNode{};
+	return nodes.size() > _index ? nodes[_index] : 0;
 }
 
 void Foliage::SetBranchMaterial(std::shared_ptr<Material> _material)
@@ -100,7 +100,7 @@ void Foliage::GenerateBranchMesh()
 	unsigned int vertexCount = 0;	// Counter for vertices
 	unsigned int indexCount = 0;	// Counter for indices
 
-	queue<FoliageNode> nodesToBuild;	// Stores the nodes in the list that can are still valid to build off of
+	queue<shared_ptr<FoliageNode>> nodesToBuild;	// Stores the nodes in the list that can are still valid to build off of
 
 	// Calculate basis vectors for root node
 	XMFLOAT3 rootRight(1.0f, 0.0f, 0.0f);
@@ -154,7 +154,7 @@ void Foliage::GenerateBranchMesh()
 	}
 
 	// Create root node
-	FoliageNode root = {
+	nodes.push_back(make_shared<FoliageNode>(FoliageNode{
 		nullptr,
 		XMFLOAT4X4(				// tfLocal
 			rootRight.x,	rootRight.y,	rootRight.z,	0.0f,
@@ -168,33 +168,32 @@ void Foliage::GenerateBranchMesh()
 		params.segmentWidth,	// width
 		0.0f,					// totalLength
 		false					// isFinal
-	};
-	nodes.push_back(root);
+		}));
+	std::shared_ptr<FoliageNode> root = nodes[0];
 
 	// Add first ring, then ring above it
-	AddNodeRingVerticesHardEdge(&vertices, &vertexCount, root);
+	AddNodeRingVerticesHardEdge(&vertices, &vertexCount, *root);
 
 	nodesToBuild.push(root);
 
 	// While there are still nodes to build from, add a child node on top
 	while (!nodesToBuild.empty()) {
-		FoliageNode parent = nodesToBuild.front();
+		auto parent = nodesToBuild.front();
 		nodesToBuild.pop();
 
-		FoliageNode child = BuildNodeFromParent(&parent, &vertexCount, &indexCount);
-		nodes.push_back(child);
+		auto child = BuildNodeFromParent(parent, &vertexCount, &indexCount);
 		
 		// If child is final, add end cap
-		if (child.isFinal) {
+		if (child->isFinal) {
 			// Add vertices for end cap
-			AddNodeEndCapVerticesHardEdge(&vertices, &vertexCount, child);
+			AddNodeEndCapVerticesHardEdge(&vertices, &vertexCount, *child);
 
 			// Connect the end cap to the ring by adding indices
 			AddEndCapIndicesHardEdge(
 				&indices,
 				&indexCount,
-				parent.verticesStart,
-				child.verticesStart
+				parent->verticesStart,
+				child->verticesStart
 			);
 
 			// DO NOT push the child back onto the queue
@@ -203,14 +202,14 @@ void Foliage::GenerateBranchMesh()
 		} else {
 
 			// Add vertices for ring
-			AddNodeRingVerticesHardEdge(&vertices, &vertexCount, child);
+			AddNodeRingVerticesHardEdge(&vertices, &vertexCount, *child);
 
 			// Connect the two rings by adding indices
 			AddSegmentIndicesHardEdge(
 				&indices,
 				&indexCount,
-				parent.verticesStart,
-				child.verticesStart
+				parent->verticesStart,
+				child->verticesStart
 			);
 
 			// Push the child 
@@ -238,7 +237,9 @@ void Foliage::GenerateLeafMesh()
 	float angle = (float)rand() / RAND_MAX * XM_2PI;
 
 	// Loop through each foliage node
-	for (const FoliageNode& node : nodes) {
+	for (shared_ptr<FoliageNode> nodePtr : nodes) {
+		FoliageNode node = *nodePtr.get();
+
 		// Break if the node doesn't have a parent (ie. is the root)
 		if (node.parent == nullptr) continue;
 
@@ -300,7 +301,7 @@ void Foliage::ScaleAndTransformVectorByMatrix(DirectX::XMFLOAT3* _vector, Direct
 		XMLoadFloat4x4(&_matrix)));
 }
 
-FoliageNode Foliage::BuildNodeFromParent(FoliageNode* _parent, unsigned int* _vertexCount, unsigned int* _indexCount)
+std::shared_ptr<FoliageNode> Foliage::BuildNodeFromParent(std::shared_ptr <FoliageNode> _parent, unsigned int* _vertexCount, unsigned int* _indexCount)
 {
 	// Use parent's data as a template
 	FoliageNode result = *_parent;
@@ -325,7 +326,7 @@ FoliageNode Foliage::BuildNodeFromParent(FoliageNode* _parent, unsigned int* _ve
 	float segmentLength = (params.segmentLength + RandomRange(params.segmentLengthVariance)) * powf(params.segmentLengthMultiplier, (float)result.iteration);
 	// If over maximum, set as final and clamp to fill the rest of the space
 	float freeLength = params.maxLength - result.totalLength;
-	if (segmentLength > freeLength) {
+	if (segmentLength >= freeLength) {
 		result.isFinal = true;
 		segmentLength = freeLength;
 	}
@@ -350,7 +351,11 @@ FoliageNode Foliage::BuildNodeFromParent(FoliageNode* _parent, unsigned int* _ve
 	result.verticesStart = *_vertexCount;
 	result.indicesStart = *_indexCount;
 
-	return result;
+	auto sharedResult = make_shared<FoliageNode>(result);
+
+	// Push onto nodes array and return a reference to it
+	nodes.push_back(sharedResult);
+	return sharedResult;
 }
 
 
@@ -504,14 +509,15 @@ void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 	//    and also translating downwards by _distance
 	// 2. Rotating by _angle
 
-	float branchDistance = _branchWidth / sqrt(2);
+	float branchDistance = 0.5f + _branchWidth / sqrtf(2);
 
 	XMFLOAT4X4 tfLeaf;
 
 	XMStoreFloat4x4(&tfLeaf,
 		XMLoadFloat4x4(&_node.tfLocal) *
-		XMMatrixTranslation(0.5f + branchDistance, _distance, -0.5f - branchDistance) *
+		XMMatrixTranslation(branchDistance, _distance, -branchDistance) *
 		XMMatrixRotationRollPitchYaw(0.0f, _angle, 0.0f)
+		//XMMatrixScaling(_leafSize, _leafSize, _leafSize) *
 	);
 		
 	for (Vertex newVert : newVerts) {
@@ -519,7 +525,7 @@ void Foliage::AddLeafQuadVertices(std::vector<Vertex>* _vertices, unsigned int* 
 		// Transform all vertices' positions and normals by the vector,
 		// scaling the quad vertices' position by the node's width first
 		// (there's probably a more efficient way to do this)
-		ScaleAndTransformVectorByMatrix(&newVert.Position, tfLeaf, _leafSize);
+		TransformVectorByMatrix(&newVert.Position, tfLeaf);
 		TransformVectorByMatrix(&newVert.Normal, tfLeaf);
 
 		// Add vertices to vertex vector and add 4 to vertexCount

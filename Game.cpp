@@ -407,11 +407,11 @@ void Game::CreateFoliage()
 	fParams.maxIterations				= 15;
 	fParams.maxLength					= 10.0f;
 	fParams.segmentLength				= 3.0f;
-	fParams.segmentLengthVariance		= 0.2f;
-	fParams.segmentLengthMultiplier		= 0.95f;
+	fParams.segmentLengthVariance		= 0.0f;
+	fParams.segmentLengthMultiplier		= 1.0f;
 	fParams.segmentWidth				= 1.0f;
-	fParams.segmentWidthVariance		= 0.1f;
-	fParams.segmentWidthMultiplier		= 0.9f;
+	fParams.segmentWidthVariance		= 0.0f;
+	fParams.segmentWidthMultiplier		= 1.0f;
 	fParams.segmentTurnAngleVariance	= 0.05f;
 	fParams.segmentTwistAngleVariance	= 0.5f;
 	fParams.splitChance					= 0.5f;
@@ -419,11 +419,11 @@ void Game::CreateFoliage()
 	fParams.splitAngle					= 0.25f;
 	fParams.splitAngleVariance			= 0.2f;
 	fParams.leafDistance				= 2.0f;
-	fParams.leafDistanceVariance		= 0.5f;
-	fParams.leafDistanceMultiplier		= 0.8f;
+	fParams.leafDistanceVariance		= 0.0f;
+	fParams.leafDistanceMultiplier		= 1.0f;
 	fParams.leafWidth					= 5.0f;
-	fParams.leafWidthVariance			= 2.0f;
-	fParams.leafWidthMultiplier			= 0.8f;
+	fParams.leafWidthVariance			= 0.0f;
+	fParams.leafWidthMultiplier			= 1.0f;
 	fParams.leafAngleChange				= GOLDEN_ANGLE;
 	fParams.leafAngleChangeVariance		= 0.2f;
 	auto fTree = make_shared<Foliage>("F_Tree", materials[13], materials[14], fParams);
@@ -2318,7 +2318,7 @@ void Game::ImGuiBuild() {
 					}
 					ImGui::SetItemTooltip("Multiplied to leaf distance after each segment");
 
-					if (ImGui::DragFloat("Leaf Width", &params.leafWidth, 0.01f, 0.0f, FLT_MAX, "%.2f", ImGuiSliderFlags_Logarithmic)) {
+					if (ImGui::DragFloat("Leaf Width", &params.leafWidth, 0.01f, 0.0f, FLT_MAX, "%.2f")) {
 						params.leafWidthVariance = min(params.leafWidthVariance, params.leafWidth);
 						paramsDirty = true;
 					}
@@ -2359,8 +2359,8 @@ void Game::ImGuiBuild() {
 				}
 				ImGui::Spacing();
 
-				FoliageNode root = foliages[i]->GetRootNode();
-				XMFLOAT4X4 rootTF = root.tfLocal;
+				auto root = foliages[i]->GetRootNode();
+				XMFLOAT4X4 rootTF = root->tfLocal;
 
 				ImGui::Text("Root Node Transform Matrix:");
 				ImGui::Text("[%+2f, %+2f, %+2f, %+2f]", rootTF._11, rootTF._12, rootTF._13, rootTF._14);

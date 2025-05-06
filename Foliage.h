@@ -82,16 +82,16 @@ struct FoliageParams {
 };
 
 struct FoliageNode {
-	FoliageNode* parent;				// Pointer to parent node
-	DirectX::XMFLOAT4X4 tfLocal;		// The local transformation of this node from the root
-	unsigned int iteration;				// How many nodes away from the root node this is
-	unsigned int verticesStart;			// The index, in the Mesh's vertex array,
-										// of the first vertex created by this node
-	unsigned int indicesStart;			// The index, in the Mesh's index array,
-										// of the first vertex created by this node
-	float width;						// The width the ring around this node should be
-	float totalLength;					// The total length accumulated by this node and its ancestors
-	bool isFinal;						// Whether this node should be an end cap
+	std::shared_ptr<FoliageNode> parent;	// Pointer to parent node
+	DirectX::XMFLOAT4X4 tfLocal;			// The local transformation of this node from the root
+	unsigned int iteration;					// How many nodes away from the root node this is
+	unsigned int verticesStart;				// The index, in the Mesh's vertex array,
+											// of the first vertex created by this node
+	unsigned int indicesStart;				// The index, in the Mesh's index array,
+											// of the first vertex created by this node
+	float width;							// The width the ring around this node should be
+	float totalLength;						// The total length accumulated by this node and its ancestors
+	bool isFinal;							// Whether this node should be an end cap
 };
 
 
@@ -114,8 +114,8 @@ public:
 	std::shared_ptr<Transform> GetTransform();
 	FoliageParams GetParams();
 	const char* GetName();
-	FoliageNode GetRootNode();
-	FoliageNode GetNode(unsigned int _index);
+	std::shared_ptr<FoliageNode> GetRootNode();
+	std::shared_ptr<FoliageNode> GetNode(unsigned int _index);
 
 	// Setters
 	void SetBranchMaterial(std::shared_ptr<Material> _material);
@@ -134,7 +134,7 @@ private:
 	const char* name;
 
 	// Internal data
-	std::vector<FoliageNode> nodes;
+	std::vector<std::shared_ptr<FoliageNode>> nodes;
 	unsigned int nodeCount;
 
 	// Generates new nodes and a new mesh for branches from the parameters
@@ -154,8 +154,8 @@ private:
 		float _scale
 	);
 	// Extends a new node off a given previous node
-	FoliageNode BuildNodeFromParent(
-		FoliageNode* _parent, 
+	std::shared_ptr <FoliageNode> BuildNodeFromParent(
+		std::shared_ptr<FoliageNode> _parent,
 		unsigned int* _vertexCount, 
 		unsigned int* _indexCount
 	);
